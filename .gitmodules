@@ -2,5 +2,5 @@
 	path = glazewm
 	url = https://github.com/samwdp/glazewm.git
 [submodule "Powershell"]
-	path = Powershell
+	path = PowerShell
 	url = https://github.com/samwdp/Powershell-Profile.git
