@@ -4,3 +4,6 @@
 [submodule "Powershell-Profile"]
 	path = Powershell-Profile
 	url = https://github.com/samwdp/Powershell-Profile.git
+[submodule "nvim"]
+	path = nvim
+	url = https://github.com/samwdp/nvim.git
