@@ -10,16 +10,19 @@ if wezterm.config_builder then
     config = wezterm.config_builder()
 end
 
+config.set_environment_variables = {
+    TERMINFO_DIRS = "~/.config/wezterm"
+}
 config.max_fps = 75
 config.animation_fps = 1
 config.cursor_blink_ease_in = 'Constant'
 config.cursor_blink_ease_out = 'Constant'
 
 config.front_end = "OpenGL"
-config.default_cursor_style = "BlinkingBlock"
+config.default_cursor_style = "BlinkingUnderline"
 config.animation_fps = 1
 config.cursor_blink_rate = 500
-config.term = "xterm-256color" -- Set the terminal type
+config.term = "wezterm" -- Set the terminal type
 config.window_background_opacity = 0.9
 config.window_decorations = "NONE | RESIZE"
 config.prefer_egl = true
