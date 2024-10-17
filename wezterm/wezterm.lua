@@ -28,13 +28,15 @@ config.default_prog = { 'pwsh', '-NoLogo' }
 
 config.color_scheme = 'Gruvbox dark, hard (base16)'
 config.font = wezterm.font_with_fallback {
-    { family = "Hack Nerd Font",  scale = 1.0 },
-    { family = "all-the-icons",   scale = 1.0 },
-    { family = "FontAwesome",     scale = 1.0 },
-    { family = "Material Icons",  scale = 1.0 },
-    { family = "file-icons",      scale = 1.0 },
-    { family = "github-octicons", scale = 1.0 },
-    { family = "Weather Icons",   scale = 1.0 },
+    { family = "Hack Nerd Font",         scale = 1.0 },
+    { family = "Symbols Nerd Font Mono", scale = 1.0 },
+    { family = "Noto Color Emoji",       scale = 1.0 },
+    { family = "all-the-icons",          scale = 1.0 },
+    { family = "FontAwesome",            scale = 1.0 },
+    { family = "Material Icons",         scale = 1.0 },
+    { family = "file-icons",             scale = 1.0 },
+    { family = "github-octicons",        scale = 1.0 },
+    { family = "Weather Icons",          scale = 1.0 },
 }
 
 -- config.window_decorations = "RESIZE"
