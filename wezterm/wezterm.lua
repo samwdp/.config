@@ -10,20 +10,17 @@ if wezterm.config_builder then
     config = wezterm.config_builder()
 end
 
-config.set_environment_variables = {
-    TERMINFO_DIRS = "~/.config/wezterm"
-}
 config.max_fps = 75
 config.animation_fps = 1
 config.cursor_blink_ease_in = 'Constant'
 config.cursor_blink_ease_out = 'Constant'
 
 config.front_end = "OpenGL"
-config.default_cursor_style = "BlinkingUnderline"
+config.default_cursor_style = "BlinkingBlock"
 config.animation_fps = 1
 config.cursor_blink_rate = 500
-config.term = "wezterm" -- Set the terminal type
-config.window_background_opacity = 0.9
+config.term = "xterm-256color" -- Set the terminal type
+config.window_background_opacity = 0.91
 config.window_decorations = "NONE | RESIZE"
 config.prefer_egl = true
 
@@ -33,6 +30,7 @@ config.color_scheme = 'Gruvbox dark, hard (base16)'
 config.font = wezterm.font_with_fallback {
     { family = "Hack Nerd Font",         scale = 1.0 },
     { family = "Symbols Nerd Font Mono", scale = 1.0 },
+    { family = "Noto Color Emoji",       scale = 1.0 },
     { family = "Noto Color Emoji",       scale = 1.0 },
     { family = "all-the-icons",          scale = 1.0 },
     { family = "FontAwesome",            scale = 1.0 },
