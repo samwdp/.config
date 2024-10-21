@@ -7,3 +7,6 @@
 [submodule "nvim"]
 	path = nvim
 	url = https://github.com/samwdp/nvim.git
+[submodule "emacs"]
+	path = emacs
+	url = https://github.com/samwdp/.emacs.d
