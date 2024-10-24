@@ -1,8 +1,10 @@
+Read-Host -Prompt "If this is running in admin, press eny key to continue or CTRL+C to quit" | Out-Null
 $wezterm = Resolve-Path "wezterm"
 $glaze = Resolve-Path "glazewm"
 $powershell = Resolve-Path "Powershell-Profile"
 $nvim = Resolve-Path "nvim"
 $emacs = Resolve-Path "emacs"
+
 New-Item -Path ../.glzr -ItemType SymbolicLink -Value $glazewm
 New-Item -Path ../Documents/PowerShell -ItemType SymbolicLink -Value $powershell
 New-Item -Path ../Documents/WindowsPowerShell -ItemType SymbolicLink -Value $powershell

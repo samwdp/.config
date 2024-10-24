@@ -28,21 +28,21 @@ config.default_prog = { 'pwsh', '-NoLogo' }
 
 config.color_scheme = 'Gruvbox dark, hard (base16)'
 config.font = wezterm.font_with_fallback {
-    { family = "Hack Nerd Font",         scale = 1.0 },
-    { family = "Symbols Nerd Font Mono", scale = 1.0 },
-    { family = "Noto Color Emoji",       scale = 1.0 },
-    { family = "Noto Color Emoji",       scale = 1.0 },
-    { family = "all-the-icons",          scale = 1.0 },
-    { family = "FontAwesome",            scale = 1.0 },
-    { family = "Material Icons",         scale = 1.0 },
-    { family = "file-icons",             scale = 1.0 },
-    { family = "github-octicons",        scale = 1.0 },
-    { family = "Weather Icons",          scale = 1.0 },
+    { family = "LiterationMono Nerd Font", scale = 1.0 },
+    { family = "Symbols Nerd Font Mono",   scale = 1.0 },
+    { family = "Noto Color Emoji",         scale = 1.0 },
+    { family = "Noto Color Emoji",         scale = 1.0 },
+    { family = "all-the-icons",            scale = 1.0 },
+    { family = "FontAwesome",              scale = 1.0 },
+    { family = "Material Icons",           scale = 1.0 },
+    { family = "file-icons",               scale = 1.0 },
+    { family = "github-octicons",          scale = 1.0 },
+    { family = "Weather Icons",            scale = 1.0 },
 }
 
 -- config.window_decorations = "RESIZE"
 config.disable_default_key_bindings = false
-config.window_close_confirmation = "AlwaysPrompt"
+config.window_close_confirmation = "NeverPrompt"
 
 config.tab_bar_at_bottom = true
 config.use_fancy_tab_bar = false
@@ -98,6 +98,11 @@ config.keys = {
         key = 'v',
         mods = 'CTRL|SHIFT',
         action = wezterm.action.PasteFrom 'Clipboard'
+    },
+    {
+        key = 'a',
+        mods = 'CTRL|SHIFT',
+        action = wezterm.action.QuickSelect
     },
     {
         key = 'n',
