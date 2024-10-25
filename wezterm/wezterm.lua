@@ -57,8 +57,9 @@ config.keys = {
     key = "r",
     mods = "LEADER",
     action = wezterm.action_callback(function(window, pane)
+            
       local cmd = [[
-      "Get-ChildItem -Path @('d:\work', 'd:\projects') -Directory | ForEach-Object { $_.FullName }" 
+      "c:\Users\sam\.config\finddirs.bat"
       ]]
             print(cmd)
       local file = io.popen(cmd)
