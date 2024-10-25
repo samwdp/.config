@@ -1,5 +1,6 @@
 -- Pull in the wezterm API
 local wezterm = require 'wezterm'
+local act = wezterm.action
 
 -- This table will hold the configuration.
 local config = {}
@@ -52,6 +53,43 @@ config.show_new_tab_button_in_tab_bar = false
 config.leader = { key = 'a', mods = 'CTRL', timeout_milliseconds = 1000 }
 
 config.keys = {
+    {
+    key = "r",
+    mods = "LEADER",
+    action = wezterm.action_callback(function(window, pane)
+      local cmd = [[
+      "Get-ChildItem -Path @('d:\work', 'd:\projects') -Directory | ForEach-Object { $_.FullName }" 
+      ]]
+            print(cmd)
+      local file = io.popen(cmd)
+            print( file)
+      local output = file:read("*a")
+      file:close()
+
+      local choices = {}
+      for directory in string.gmatch(output, "([^\n]+)") do
+        table.insert(choices, { label = directory })
+      end
+
+      window:perform_action(
+        act.InputSelector {
+          title = "Workspaces",
+          choices = choices,
+          action = wezterm.action_callback(function(window, pane, id, label)
+            if label then
+              window:perform_action(act.SwitchToWorkspace {
+                name = label:match("([^/]+)$"),
+                spawn = {
+                  cwd = label,
+                }
+              }, pane)
+            end
+          end),
+        },
+        pane
+      )
+    end),
+  },
     -- Send "CTRL-A" to the terminal when pressing CTRL-A, CTRL-A
     {
         key = 'a',
