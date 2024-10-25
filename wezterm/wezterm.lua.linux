@@ -61,9 +61,7 @@ config.keys = {
       local cmd = [[
             "find ~/projects ~/work -mindepth 1 -maxdepth 3 -type d"
       ]]
-            print(cmd)
       local file = io.popen(cmd)
-            print( file)
       local output = file:read("*a")
       file:close()
 
