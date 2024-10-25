@@ -59,7 +59,7 @@ config.keys = {
     action = wezterm.action_callback(function(window, pane)
             
       local cmd = [[
-      "c:\Users\sam\.config\finddirs.bat"
+            "find ~/projects ~/work -mindepth 1 -maxdepth 3 -type d"
       ]]
             print(cmd)
       local file = io.popen(cmd)
