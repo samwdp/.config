@@ -11,15 +11,9 @@ if wezterm.config_builder then
     config = wezterm.config_builder()
 end
 
-config.max_fps = 75
-config.animation_fps = 1
-config.cursor_blink_ease_in = 'Constant'
-config.cursor_blink_ease_out = 'Constant'
+config.max_fps = 120
+config.animation_fps = 120
 
-config.front_end = "OpenGL"
-config.default_cursor_style = "BlinkingBlock"
-config.animation_fps = 1
-config.cursor_blink_rate = 500
 config.term = "xterm-256color" -- Set the terminal type
 config.window_background_opacity = 0.91
 config.window_decorations = "NONE | RESIZE"
@@ -27,21 +21,10 @@ config.prefer_egl = true
 
 config.default_prog = { 'pwsh', '-NoLogo' }
 
-config.color_scheme = 'Gruvbox dark, hard (base16)'
-config.font = wezterm.font_with_fallback {
-    { family = "LiterationMono Nerd Font", scale = 1.0 },
-    { family = "Symbols Nerd Font Mono",   scale = 1.0 },
-    { family = "Noto Color Emoji",         scale = 1.0 },
-    { family = "Noto Color Emoji",         scale = 1.0 },
-    { family = "all-the-icons",            scale = 1.0 },
-    { family = "FontAwesome",              scale = 1.0 },
-    { family = "Material Icons",           scale = 1.0 },
-    { family = "file-icons",               scale = 1.0 },
-    { family = "github-octicons",          scale = 1.0 },
-    { family = "Weather Icons",            scale = 1.0 },
-}
+config.color_scheme = 'GruvboxDarkHard'
 
--- config.window_decorations = "RESIZE"
+config.font = wezterm.font "LiterationMono Nerd Font"
+
 config.disable_default_key_bindings = false
 config.window_close_confirmation = "NeverPrompt"
 
@@ -54,41 +37,41 @@ config.leader = { key = 'a', mods = 'CTRL', timeout_milliseconds = 1000 }
 
 config.keys = {
     {
-    key = "r",
-    mods = "LEADER",
-    action = wezterm.action_callback(function(window, pane)
-            
-      local cmd = [[
-            "find ~/projects ~/work -mindepth 1 -maxdepth 3 -type d"
-      ]]
-      local file = io.popen(cmd)
-      local output = file:read("*a")
-      file:close()
+        key = "r",
+        mods = "LEADER",
+        action = wezterm.action_callback(function(window, pane)
+            local cmd = [[
+                "find ~/projects ~/work -mindepth 1 -maxdepth 3 -type d"
+                ]]
+            local file = io.popen(cmd)
+            local output = file:read("*a")
+            file:close()
 
-      local choices = {}
-      for directory in string.gmatch(output, "([^\n]+)") do
-        table.insert(choices, { label = directory })
-      end
-
-      window:perform_action(
-        act.InputSelector {
-          title = "Workspaces",
-          choices = choices,
-          action = wezterm.action_callback(function(window, pane, id, label)
-            if label then
-              window:perform_action(act.SwitchToWorkspace {
-                name = label:match("([^/]+)$"),
-                spawn = {
-                  cwd = label,
-                }
-              }, pane)
+            local choices = {}
+            for directory in string.gmatch(output, "([^\n]+)") do
+                table.insert(choices, { label = directory })
             end
-          end),
-        },
-        pane
-      )
-    end),
-  },
+
+            window:perform_action(
+                act.InputSelector {
+                    title = "Workspaces",
+                    choices = choices,
+                    action = wezterm.action_callback(function(window, pane, id, label)
+                        if label then
+                            window:perform_action(act.SwitchToWorkspace {
+                                name = label:match("([^/]+)$"),
+                                spawn = {
+                                    cwd = label,
+                                }
+                            }, pane)
+                        end
+                    end),
+                    fuzzy = true,
+                },
+                pane
+            )
+        end),
+    },
     -- Send "CTRL-A" to the terminal when pressing CTRL-A, CTRL-A
     {
         key = 'a',
@@ -106,6 +89,16 @@ config.keys = {
         action = wezterm.action.ShowLauncher
     },
     {
+        key = '\\',
+        mods = 'LEADER',
+        action = wezterm.action.SplitHorizontal { domain = 'CurrentPaneDomain' },
+    },
+    {
+        key = '-',
+        mods = 'LEADER',
+        action = wezterm.action.SplitVertical { domain = 'CurrentPaneDomain' },
+    },
+    {
         key = 'c',
         mods = 'LEADER',
         action = wezterm.action { SpawnTab = "CurrentPaneDomain" }
@@ -115,11 +108,15 @@ config.keys = {
         mods = 'LEADER',
         action = wezterm.action { ActivateTabRelative = 1 }
     },
-
+    {
+        key = 'q',
+        mods = 'LEADER|SHIFT',
+        action = wezterm.action.CloseCurrentTab { confirm = false },
+    },
     {
         key = 'q',
         mods = 'LEADER',
-        action = wezterm.action.CloseCurrentTab { confirm = false },
+        action = wezterm.action.CloseCurrentPane { confirm = false },
     },
     {
         key = 'p',
@@ -173,6 +170,35 @@ config.keys = {
         },
     },
 }
+
+-- tab bar
+config.hide_tab_bar_if_only_one_tab = false
+config.tab_bar_at_bottom = true
+config.use_fancy_tab_bar = false
+config.tab_and_split_indices_are_zero_based = true
+
+-- tmux status
+wezterm.on("update-right-status", function(window, _)
+    local SOLID_LEFT_ARROW = ""
+    local ARROW_FOREGROUND = { Foreground = { Color = "#000000" } }
+    local prefix = ""
+
+    if window:leader_is_active() then
+        prefix = " " .. utf8.char(0x22ab) -- ocean wave
+        SOLID_LEFT_ARROW = utf8.char(0xe0b2)
+    end
+
+    if window:active_tab():tab_id() ~= 0 then
+        ARROW_FOREGROUND = { Foreground = { Color = "#333" } }
+    end -- arrow color based on if tab is first pane
+
+    window:set_left_status(wezterm.format {
+        { Background = { Color = "#dca82e" } },
+        { Text = prefix },
+        ARROW_FOREGROUND,
+        { Text = SOLID_LEFT_ARROW }
+    })
+end)
 
 -- and finally, return the configuration to wezterm
 return config

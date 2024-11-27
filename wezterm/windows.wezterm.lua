@@ -11,15 +11,9 @@ if wezterm.config_builder then
     config = wezterm.config_builder()
 end
 
-config.max_fps = 240
-config.animation_fps = 10
-config.cursor_blink_ease_in = 'Constant'
-config.cursor_blink_ease_out = 'Constant'
+config.max_fps = 120
+config.animation_fps = 120
 
-config.front_end = "OpenGL"
-config.default_cursor_style = "BlinkingBlock"
-config.animation_fps = 1
-config.cursor_blink_rate = 500
 config.term = "xterm-256color" -- Set the terminal type
 config.window_background_opacity = 0.91
 config.window_decorations = "NONE | RESIZE"
@@ -27,7 +21,7 @@ config.prefer_egl = true
 
 config.default_prog = { 'pwsh', '-NoLogo' }
 
-config.color_scheme = 'Gruvbox dark, hard (base16)'
+config.color_scheme = 'GruvboxDarkHard'
 
 config.font = wezterm.font "LiterationMono Nerd Font"
 
@@ -70,6 +64,7 @@ config.keys = {
                             }, pane)
                         end
                     end),
+                    fuzzy = true,
                 },
                 pane
             )
@@ -92,6 +87,16 @@ config.keys = {
         action = wezterm.action.ShowLauncher
     },
     {
+        key = '\\',
+        mods = 'LEADER',
+        action = wezterm.action.SplitHorizontal { domain = 'CurrentPaneDomain' },
+    },
+    {
+        key = '-',
+        mods = 'LEADER',
+        action = wezterm.action.SplitVertical { domain = 'CurrentPaneDomain' },
+    },
+    {
         key = 'c',
         mods = 'LEADER',
         action = wezterm.action { SpawnTab = "CurrentPaneDomain" }
@@ -103,8 +108,13 @@ config.keys = {
     },
     {
         key = 'q',
-        mods = 'LEADER',
+        mods = 'LEADER|SHIFT',
         action = wezterm.action.CloseCurrentTab { confirm = false },
+    },
+    {
+        key = 'q',
+        mods = 'LEADER',
+        action = wezterm.action.CloseCurrentPane { confirm = false },
     },
     {
         key = 'p',
@@ -158,6 +168,35 @@ config.keys = {
         },
     },
 }
+
+-- tab bar
+config.hide_tab_bar_if_only_one_tab = false
+config.tab_bar_at_bottom = true
+config.use_fancy_tab_bar = false
+config.tab_and_split_indices_are_zero_based = true
+
+-- tmux status
+wezterm.on("update-right-status", function(window, _)
+    local SOLID_LEFT_ARROW = ""
+    local ARROW_FOREGROUND = { Foreground = { Color = "#000000" } }
+    local prefix = ""
+
+    if window:leader_is_active() then
+        prefix = " " .. utf8.char(0x22ab) -- ocean wave
+        SOLID_LEFT_ARROW = utf8.char(0xe0b2)
+    end
+
+    if window:active_tab():tab_id() ~= 0 then
+        ARROW_FOREGROUND = { Foreground = { Color = "#333" } }
+    end -- arrow color based on if tab is first pane
+
+    window:set_left_status(wezterm.format {
+        { Background = { Color = "#dca82e" } },
+        { Text = prefix },
+        ARROW_FOREGROUND,
+        { Text = SOLID_LEFT_ARROW }
+    })
+end)
 
 -- and finally, return the configuration to wezterm
 return config

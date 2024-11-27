@@ -4,7 +4,7 @@ $glaze = Resolve-Path "glazewm"
 $powershell = Resolve-Path "Powershell-Profile"
 $nvim = Resolve-Path "nvim"
 $emacs = Resolve-Path "emacs"
-$wezterm = Resolve-Path "wezterm/wezterm.lua.windows"
+$wezterm = Resolve-Path "wezterm/windows.wezterm.lua"
 $nushell = Resolve-Path "nushell"
 
 New-Item -Path ../.glzr -ItemType SymbolicLink -Value $glazewm
