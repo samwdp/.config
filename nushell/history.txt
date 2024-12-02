@@ -79,3 +79,8 @@ vi
 cd ..
 ls
 git status 
+git add .
+git commit -m "made shell change"
+git push
+git status
+vi
