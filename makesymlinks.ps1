@@ -12,7 +12,7 @@ New-Item -Path ../Documents/PowerShell -ItemType SymbolicLink -Value $powershell
 New-Item -Path ../Documents/WindowsPowerShell -ItemType SymbolicLink -Value $powershell
 New-Item -Path ../.wezterm.lua -ItemType SymbolicLink -Value $wezterm
 New-Item -Path ..\AppData\Local\nvim -ItemType SymbolicLink -Value $nvim
-New-Item -Path ..\AppData\Roamding\.emacs.d -ItemType SymbolicLink -Value $emacs
-New-Item -Path ..\AppData\Roamding\nushell -ItemType SymbolicLink -Value $nushell
+New-Item -Path ..\AppData\Roaming\.emacs.d -ItemType SymbolicLink -Value $emacs
+New-Item -Path ..\AppData\Roaming\nushell -ItemType SymbolicLink -Value $nushell
 New-Item -Path wezterm/wezterm.lua -ItemType SymbolicLink -Value $wezterm
 

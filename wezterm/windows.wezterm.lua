@@ -1,6 +1,7 @@
 -- Pull in the wezterm API
 local wezterm = require 'wezterm'
 local act = wezterm.action
+local mux = wezterm.mux
 
 -- This table will hold the configuration.
 local config = {}
@@ -19,7 +20,8 @@ config.window_background_opacity = 0.91
 config.window_decorations = "NONE | RESIZE"
 config.prefer_egl = true
 
-config.default_prog = { 'pwsh', '-NoLogo' }
+-- config.default_prog = { 'pwsh', '-NoLogo' }
+config.default_prog = { 'nu' }
 
 config.color_scheme = 'GruvboxDarkHard'
 
@@ -198,5 +200,25 @@ wezterm.on("update-right-status", function(window, _)
     })
 end)
 
+wezterm.on('gui-startup', function(cmd)
+    local args = { 'nu' }
+    if cmd then
+        args = cmd.args
+    end
+
+    local default_workspace_dirs = {
+        { dir = wezterm.home_dir .. '/.config',            name = "config" },
+        { dir = wezterm.home_dir .. '/Documents/Obsidian', name = "Obsidian" },
+    }
+
+    for _, v in pairs(default_workspace_dirs) do
+        local tab, build_pane, window = mux.spawn_window {
+            workspace = v.name,
+            cwd = v.dir,
+            args = args,
+        }
+    end
+    mux.set_active_workspace 'Obsidian'
+end)
 -- and finally, return the configuration to wezterm
 return config
