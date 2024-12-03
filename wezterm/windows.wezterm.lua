@@ -12,6 +12,7 @@ if wezterm.config_builder then
     config = wezterm.config_builder()
 end
 
+-- setting this to false for 1password prompting
 config.mux_enable_ssh_agent = false
 config.max_fps = 120
 config.animation_fps = 120
