@@ -12,6 +12,7 @@ if wezterm.config_builder then
     config = wezterm.config_builder()
 end
 
+config.mux_enable_ssh_agent = false
 config.max_fps = 120
 config.animation_fps = 120
 
