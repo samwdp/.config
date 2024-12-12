@@ -103,8 +103,8 @@ $env.NU_PLUGIN_DIRS = [
 $env.CARAPACE_BRIDGES = 'zsh,fish,bash,inshellisense' # optional
 mkdir ~/.cache/carapace
 carapace _carapace nushell | save --force ~/.cache/carapace/init.nu
-mkdir ~/.cache/starship
 mkdir ~/.cache/zoxide
-starship init nu | save -f ~/.cache/starship/init.nu
 zoxide init --cmd "cd" nushell | save -f ~/.cache/zoxide/init.nu
+mkdir ~/.cache/starship
+starship init nu | save -f ~/.cache/starship/init.nu
 ## ~/.config/nushell/env.nu

@@ -896,7 +896,7 @@ $env.config = {
         }
     ]
 }
-alias vi = nvim .
+alias vi = nvim
 use ~/.cache/starship/init.nu
 source ~/.cache/carapace/init.nu
 source ~/.cache/zoxide/init.nu

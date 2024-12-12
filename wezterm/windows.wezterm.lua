@@ -16,14 +16,20 @@ end
 config.mux_enable_ssh_agent = false
 config.max_fps = 120
 config.animation_fps = 120
+config.front_end = "OpenGL"
+local gpus = wezterm.gui.enumerate_gpus()
+
+config.webgpu_preferred_adapter = gpus[5]
 
 config.term = "xterm-256color" -- Set the terminal type
-config.window_background_opacity = 0.91
+config.window_background_opacity = 0.85
+config.win32_system_backdrop = "Acrylic"
+config.win32_acrylic_accent_color = "#282828"
 config.window_decorations = "NONE | RESIZE"
-config.prefer_egl = true
 
 -- config.default_prog = { 'pwsh', '-NoLogo' }
-config.default_prog = { 'nu' }
+local default_prog = { 'nu' }
+config.default_prog = default_prog
 
 config.color_scheme = 'GruvboxDarkHard'
 
@@ -41,11 +47,11 @@ config.leader = { key = 'a', mods = 'CTRL', timeout_milliseconds = 1000 }
 
 config.keys = {
     {
-        key = "r",
+        key = "s",
         mods = "LEADER",
         action = wezterm.action_callback(function(window, pane)
             local cmd = [[ "c:\Users\sam\.config\finddirs.bat" ]]
-            local file = io.popen(cmd)
+            local file = io.popen(cmd, "r")
             local output = file:read("*a")
             file:close()
 
@@ -58,7 +64,7 @@ config.keys = {
                 act.InputSelector {
                     title = "Workspaces",
                     choices = choices,
-                    action = wezterm.action_callback(function(window, pane, id, label)
+                    action = wezterm.action_callback(function(_, _, _, label)
                         if label then
                             window:perform_action(act.SwitchToWorkspace {
                                 name = label:match("([^/]+)$"),
@@ -84,11 +90,6 @@ config.keys = {
         key = 'f',
         mods = 'LEADER',
         action = wezterm.action.ToggleFullScreen
-    },
-    {
-        key = 'p',
-        mods = 'CTRL|SHIFT',
-        action = wezterm.action.ShowLauncher
     },
     {
         key = '\\',
@@ -140,30 +141,31 @@ config.keys = {
         mods = 'CTRL|SHIFT',
         action = wezterm.action.QuickSelect
     },
-    {
-        key = 'n',
-        mods = 'CTRL|SHIFT',
-        action = wezterm.action.PromptInputLine {
-            description = wezterm.format {
-                { Attribute = { Intensity = 'Bold' } },
-                { Foreground = { AnsiColor = 'Fuchsia' } },
-                { Text = 'Enter name for new workspace' },
-            },
-            action = wezterm.action_callback(function(window, pane, line)
-                -- line will be `nil` if they hit escape without entering anything
-                -- An empty string if they just hit enter
-                -- Or the actual line of text they wrote
-                if line then
-                    window:perform_action(
-                        wezterm.action.SwitchToWorkspace {
-                            name = line,
-                        },
-                        pane
-                    )
-                end
-            end),
-        },
-    },
+    { key = 'l', mods = 'LEADER', action = wezterm.action.ShowLauncher },
+    -- {
+    --     key = 'n',
+    --     mods = 'CTRL|SHIFT',
+    --     action = wezterm.action.PromptInputLine {
+    --         description = wezterm.format {
+    --             { Attribute = { Intensity = 'Bold' } },
+    --             { Foreground = { AnsiColor = 'Fuchsia' } },
+    --             { Text = 'Enter name for new workspace' },
+    --         },
+    --         action = wezterm.action_callback(function(window, pane, line)
+    --             -- line will be `nil` if they hit escape without entering anything
+    --             -- An empty string if they just hit enter
+    --             -- Or the actual line of text they wrote
+    --             if line then
+    --                 window:perform_action(
+    --                     wezterm.action.SwitchToWorkspace {
+    --                         name = line,
+    --                     },
+    --                     pane
+    --                 )
+    --             end
+    --         end),
+    --     },
+    -- },
     {
         key = 'w',
         mods = 'LEADER',
@@ -203,7 +205,9 @@ wezterm.on("update-right-status", function(window, _)
 end)
 
 wezterm.on('gui-startup', function(cmd)
-    local args = { 'nu' }
+    -- allow `wezterm start -- something` to affect what we spawn
+    -- in our initial window
+    local args = default_prog
     if cmd then
         args = cmd.args
     end
@@ -214,13 +218,14 @@ wezterm.on('gui-startup', function(cmd)
     }
 
     for _, v in pairs(default_workspace_dirs) do
-        local tab, build_pane, window = mux.spawn_window {
+        mux.spawn_window {
             workspace = v.name,
             cwd = v.dir,
             args = args,
         }
     end
+
     mux.set_active_workspace 'Obsidian'
 end)
--- and finally, return the configuration to wezterm
+
 return config
