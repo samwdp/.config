@@ -22,9 +22,9 @@ local gpus = wezterm.gui.enumerate_gpus()
 config.webgpu_preferred_adapter = gpus[5]
 
 config.term = "xterm-256color" -- Set the terminal type
-config.window_background_opacity = 0.85
-config.win32_system_backdrop = "Acrylic"
-config.win32_acrylic_accent_color = "#282828"
+config.window_background_opacity = 0
+config.win32_system_backdrop = "Tabbed"
+-- config.win32_acrylic_accent_color = "#282828"
 config.window_decorations = "NONE | RESIZE"
 
 -- config.default_prog = { 'pwsh', '-NoLogo' }

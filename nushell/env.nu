@@ -100,6 +100,8 @@ $env.NU_PLUGIN_DIRS = [
 
 # To load from a custom file you can use:
 # source ($nu.default-config-dir | path join 'custom.nu')
+fnm env --shell powershell | lines |str replace "$env:" "" | split column "=" | rename name value |skip 1 | reduce -f {} {|it, acc| $acc | upsert $it.name $it.value } | load-env
+
 $env.CARAPACE_BRIDGES = 'zsh,fish,bash,inshellisense' # optional
 mkdir ~/.cache/carapace
 carapace _carapace nushell | save --force ~/.cache/carapace/init.nu
