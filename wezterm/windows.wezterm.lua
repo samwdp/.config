@@ -39,46 +39,120 @@ config.disable_default_key_bindings = false
 config.window_close_confirmation = "NeverPrompt"
 
 config.tab_bar_at_bottom = true
-config.use_fancy_tab_bar = false
-config.show_tabs_in_tab_bar = true
-config.show_new_tab_button_in_tab_bar = false
-
 config.leader = { key = 'a', mods = 'CTRL', timeout_milliseconds = 1000 }
+
+wezterm.on('gui-startup', function(cmd)
+    local args = default_prog
+    if cmd then
+        args = cmd.args
+    end
+
+    local tab, build_pane, window = mux.spawn_window {
+        workspace = 'home',
+        args = args,
+        cwd = wezterm.home_dir .. '/Documents/Obsidian',
+    }
+
+    local editor_pane = build_pane:split {
+        direction = 'Right',
+        size = 0.3,
+        cwd = wezterm.home_dir .. "/.config",
+    }
+
+
+    build_pane:send_text 'vi .\r\n'
+    editor_pane:send_text 'vi .\r\n'
+
+    mux.set_active_workspace 'home'
+end)
+
+-- plugins
+local tabline = wezterm.plugin.require("https://github.com/michaelbrusegard/tabline.wez")
+tabline.setup({
+    options = {
+        icons_enabled = true,
+        theme = 'GruvboxDarkHard',
+        color_overrides = {},
+        section_separators = {
+            left = wezterm.nerdfonts.ple_right_half_circle_thick,
+            right = wezterm.nerdfonts.ple_left_half_circle_thick,
+        },
+        component_separators = {
+            left = wezterm.nerdfonts.ple_right_half_circle_thin,
+            right = wezterm.nerdfonts.ple_left_half_circle_thin,
+        },
+        tab_separators = {
+            left = wezterm.nerdfonts.ple_right_half_circle_thick,
+            right = wezterm.nerdfonts.ple_left_half_circle_thick,
+        },
+    },
+})
+tabline.apply_to_config(config)
+
+local sessionizer = wezterm.plugin.require("https://github.com/mikkasendke/sessionizer.wezterm")
+sessionizer.apply_to_config(config)
+sessionizer.config = {
+    paths = {
+        "d:/projects",
+        "d:/work",
+    },
+    command = {
+        "fd",
+        "-Hs",
+        "^.git|worktrees$",
+        "-td",
+        "--max-depth=3",
+        "--prune",
+        "--format",
+        "{//}",
+        "-E node_modules"
+    },
+    title = "Sessionzer",
+    show_default = true,
+    show_most_recent = true,
+    fuzzy = true,
+    additional_directories = {},
+    show_additional_before_paths = false,
+    description = "Select a workspace: ",
+    experimental_branches = false,
+}
 
 config.keys = {
     {
         key = "s",
         mods = "LEADER",
-        action = wezterm.action_callback(function(window, pane)
-            local cmd = [[ "c:\Users\sam\.config\finddirs.bat" ]]
-            local file = io.popen(cmd, "r")
-            local output = file:read("*a")
-            file:close()
+        action = sessionizer.show,
 
-            local choices = {}
-            for directory in string.gmatch(output, "([^\n]+)") do
-                table.insert(choices, { label = directory })
-            end
-
-            window:perform_action(
-                act.InputSelector {
-                    title = "Workspaces",
-                    choices = choices,
-                    action = wezterm.action_callback(function(_, _, _, label)
-                        if label then
-                            window:perform_action(act.SwitchToWorkspace {
-                                name = label:match("([^/]+)$"),
-                                spawn = {
-                                    cwd = label,
-                                }
-                            }, pane)
-                        end
-                    end),
-                    fuzzy = true,
-                },
-                pane
-            )
-        end),
+        -- action = wezterm.action_callback(function(window, pane)
+        --     local cmd = [[ "c:\Users\sam\.config\finddirs.bat" ]]
+        --     local file = io.popen(cmd, "r")
+        --     local output = file:read("*a")
+        --     file:close()
+        --
+        --     local choices = {}
+        --     for directory in string.gmatch(output, "([^\n]+)") do
+        --         table.insert(choices, { label = directory })
+        --     end
+        --
+        --     window:perform_action(
+        --         act.InputSelector {
+        --             title = "Workspaces",
+        --             choices = choices,
+        --             action = wezterm.action_callback(function(_, _, _, label)
+        --                 if label then
+        --                     window:perform_action(act.SwitchToWorkspace {
+        --                         name = label:match("([^/]+)$"),
+        --                         spawn = {
+        --                             cwd = label,
+        --                         }
+        --                     }, pane)
+        --                 end
+        --             end),
+        --             fuzzy = true,
+        --         },
+        --         pane
+        --     )
+        -- end),
     },
     -- Send "CTRL-A" to the terminal when pressing CTRL-A, CTRL-A
     {
@@ -141,31 +215,26 @@ config.keys = {
         mods = 'CTRL|SHIFT',
         action = wezterm.action.QuickSelect
     },
-    { key = 'l', mods = 'LEADER', action = wezterm.action.ShowLauncher },
-    -- {
-    --     key = 'n',
-    --     mods = 'CTRL|SHIFT',
-    --     action = wezterm.action.PromptInputLine {
-    --         description = wezterm.format {
-    --             { Attribute = { Intensity = 'Bold' } },
-    --             { Foreground = { AnsiColor = 'Fuchsia' } },
-    --             { Text = 'Enter name for new workspace' },
-    --         },
-    --         action = wezterm.action_callback(function(window, pane, line)
-    --             -- line will be `nil` if they hit escape without entering anything
-    --             -- An empty string if they just hit enter
-    --             -- Or the actual line of text they wrote
-    --             if line then
-    --                 window:perform_action(
-    --                     wezterm.action.SwitchToWorkspace {
-    --                         name = line,
-    --                     },
-    --                     pane
-    --                 )
-    --             end
-    --         end),
-    --     },
-    -- },
+    {
+        key = 'h',
+        mods = 'LEADER',
+        action = wezterm.action { ActivatePaneDirection = "Left" }
+    },
+    {
+        key = 'l',
+        mods = 'LEADER',
+        action = wezterm.action { ActivatePaneDirection = "Right" }
+    },
+    {
+        key = 'j',
+        mods = 'LEADER',
+        action = wezterm.action { ActivatePaneDirection = "Down" }
+    },
+    {
+        key = 'k',
+        mods = 'LEADER',
+        action = wezterm.action { ActivatePaneDirection = "Up" }
+    },
     {
         key = 'w',
         mods = 'LEADER',
@@ -174,58 +243,4 @@ config.keys = {
         },
     },
 }
-
--- tab bar
-config.hide_tab_bar_if_only_one_tab = false
-config.tab_bar_at_bottom = true
-config.use_fancy_tab_bar = false
-config.tab_and_split_indices_are_zero_based = true
-
--- tmux status
-wezterm.on("update-right-status", function(window, _)
-    local SOLID_LEFT_ARROW = ""
-    local ARROW_FOREGROUND = { Foreground = { Color = "#000000" } }
-    local prefix = ""
-
-    if window:leader_is_active() then
-        prefix = " " .. utf8.char(0x22ab) -- ocean wave
-        SOLID_LEFT_ARROW = utf8.char(0xe0b2)
-    end
-
-    if window:active_tab():tab_id() ~= 0 then
-        ARROW_FOREGROUND = { Foreground = { Color = "#333" } }
-    end -- arrow color based on if tab is first pane
-
-    window:set_left_status(wezterm.format {
-        { Background = { Color = "#dca82e" } },
-        { Text = prefix },
-        ARROW_FOREGROUND,
-        { Text = SOLID_LEFT_ARROW }
-    })
-end)
-
-wezterm.on('gui-startup', function(cmd)
-    -- allow `wezterm start -- something` to affect what we spawn
-    -- in our initial window
-    local args = default_prog
-    if cmd then
-        args = cmd.args
-    end
-
-    local default_workspace_dirs = {
-        { dir = wezterm.home_dir .. '/.config',            name = "config" },
-        { dir = wezterm.home_dir .. '/Documents/Obsidian', name = "Obsidian" },
-    }
-
-    for _, v in pairs(default_workspace_dirs) do
-        mux.spawn_window {
-            workspace = v.name,
-            cwd = v.dir,
-            args = args,
-        }
-    end
-
-    mux.set_active_workspace 'Obsidian'
-end)
-
 return config
