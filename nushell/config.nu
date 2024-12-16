@@ -907,6 +907,6 @@ $env.FNM_MULTISHELL_PATH = $"($env.FNM_DIR)/nodejs"
 path add $env.FNM_MULTISHELL_PATH
 alias vi = nvim
 alias cat = bat
+use ~/.cache/starship/init.nu
 source ~/.cache/carapace/init.nu
 source ~/.cache/zoxide/init.nu
-use ~/.cache/starship/init.nu
