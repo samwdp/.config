@@ -1,24 +1,26 @@
 function Install-Package {
     param (
+        [Parameter(Mandatory=$true)]
         [string]$Package,
-        [string]$PackageSource
+        [Parameter(Mandatory=$false)]
+        [string]$PackageSource,
+        [Parameter(Mandatory=$false)]
+        [string[]]$ExtraArgs=@()
     )
 
     switch ($PackageSource) {
-        "winget" { 
-            winget install $Package
+        "winget" {
+            Write-Output "winget install $($Package) $($ExtraArgs)"
+
+            winget install $Package $ExtraArgs
         }
-        "choco" {
-            choco install $Package -y
+        Default {
+            winget install $Package $ExtraArgs
         }
-        Default {}
     }
 }
 
-
-Read-Host -Prompt "If this is running in admin, press eny key to continue or CTRL+C to quit" | Out-Null
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
+Install-Package "Microsoft.Powershell" "winget"
 Install-Package "Git.Git" "winget"
 Install-Package "glzr-io.glazewm" "winget"
 Install-Package "Nushell.Nushell" "winget"
@@ -29,6 +31,7 @@ Install-Package "ajeetdsouza.zoxide" "winget"
 Install-Package "Microsoft.PowerToys" "winget"
 Install-Package "junegunn.fzf" "winget"
 Install-Package "rsteube.Carapace" "winget"
-Install-Package "CoreyButler.NVMforWindows" "winget"
+Install-Package "Schniz.fmn" "winget"
 Install-Package "Google.GoogleDrive" "winget"
-Install-Package "neovim" "choco"
+Install-Package "Neovim.Neovim.Nightly" "winget" @("--ignore-security-hash","--force")
+Install-Package "sharkdp.bat" "winget"
