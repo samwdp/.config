@@ -35,3 +35,4 @@ Install-Package "Schniz.fmn" "winget"
 Install-Package "Google.GoogleDrive" "winget"
 Install-Package "Neovim.Neovim.Nightly" "winget" @("--ignore-security-hash","--force")
 Install-Package "sharkdp.bat" "winget"
+curl https://support.attackshark.com/attackshark/ATTACK_SHARK_R1/Attack_SharkR1Mouse.exe -o mouse.exe
