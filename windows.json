@@ -1,6 +1,6 @@
 {
 	"$schema" : "https://aka.ms/winget-packages.schema.2.0.json",
-	"CreationDate" : "2024-12-14T16:10:21.609-00:00",
+	"CreationDate" : "2024-12-17T13:12:45.668-00:00",
 	"Sources" : 
 	[
 		{
@@ -16,13 +16,28 @@
 					"PackageIdentifier" : "Git.Git"
 				},
 				{
+					"PackageIdentifier" : "ImageMagick.ImageMagick"
+				},
+				{
+					"PackageIdentifier" : "AntibodySoftware.WizTree"
+				},
+				{
+					"PackageIdentifier" : "Neovim.Neovim.Nightly"
+				},
+				{
 					"PackageIdentifier" : "glzr-io.zebar"
 				},
 				{
 					"PackageIdentifier" : "Microsoft.msodbcsql.17"
 				},
 				{
+					"PackageIdentifier" : "Microsoft.VCRedist.2010.x64"
+				},
+				{
 					"PackageIdentifier" : "Nushell.Nushell"
+				},
+				{
+					"PackageIdentifier" : "filips.FirefoxPWA"
 				},
 				{
 					"PackageIdentifier" : "Microsoft.CLRTypesSQLServer.2019"
@@ -32,6 +47,9 @@
 				},
 				{
 					"PackageIdentifier" : "Microsoft.WebDeploy"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.PowerShell"
 				},
 				{
 					"PackageIdentifier" : "Microsoft.SQLServer.2012.NativeClient"
@@ -46,22 +64,31 @@
 					"PackageIdentifier" : "wez.wezterm"
 				},
 				{
+					"PackageIdentifier" : "GoLang.Go"
+				},
+				{
 					"PackageIdentifier" : "Microsoft.VisualStudio.2022.Community"
 				},
 				{
 					"PackageIdentifier" : "Microsoft.VisualStudio.2019.BuildTools"
 				},
 				{
-					"PackageIdentifier" : "Microsoft.SQLServerManagementStudio.Preview"
+					"PackageIdentifier" : "GnuWin32.File"
 				},
 				{
 					"PackageIdentifier" : "Microsoft.Edge"
+				},
+				{
+					"PackageIdentifier" : "Parsec.Parsec"
 				},
 				{
 					"PackageIdentifier" : "SpeedCrunch.SpeedCrunch"
 				},
 				{
 					"PackageIdentifier" : "Valve.Steam"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.WindowsSDK.10.0.19041"
 				},
 				{
 					"PackageIdentifier" : "Microsoft.DotNet.SDK.8"
@@ -74,6 +101,12 @@
 				},
 				{
 					"PackageIdentifier" : "Microsoft.DotNet.SDK.6"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.SQLServerManagementStudio"
+				},
+				{
+					"PackageIdentifier" : "Microsoft.VCRedist.2010.x86"
 				},
 				{
 					"PackageIdentifier" : "Microsoft.VCRedist.2015+.x86"
@@ -91,10 +124,19 @@
 					"PackageIdentifier" : "BurntSushi.ripgrep.GNU"
 				},
 				{
+					"PackageIdentifier" : "Gyan.FFmpeg"
+				},
+				{
 					"PackageIdentifier" : "rcmaehl.MSEdgeRedirect"
 				},
 				{
+					"PackageIdentifier" : "Postman.Postman"
+				},
+				{
 					"PackageIdentifier" : "Rustlang.Rustup"
+				},
+				{
+					"PackageIdentifier" : "SQLite.SQLite"
 				},
 				{
 					"PackageIdentifier" : "Schniz.fnm"
@@ -106,6 +148,9 @@
 					"PackageIdentifier" : "ajeetdsouza.zoxide"
 				},
 				{
+					"PackageIdentifier" : "jqlang.jq"
+				},
+				{
 					"PackageIdentifier" : "junegunn.fzf"
 				},
 				{
@@ -115,7 +160,19 @@
 					"PackageIdentifier" : "rsteube.Carapace"
 				},
 				{
+					"PackageIdentifier" : "sharkdp.bat"
+				},
+				{
+					"PackageIdentifier" : "sharkdp.fd"
+				},
+				{
 					"PackageIdentifier" : "SlackTechnologies.Slack"
+				},
+				{
+					"PackageIdentifier" : "sxyazi.yazi"
+				},
+				{
+					"PackageIdentifier" : "ttimer.ttimer"
 				},
 				{
 					"PackageIdentifier" : "Ytmdesktop.Ytmdesktop"

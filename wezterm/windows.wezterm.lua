@@ -34,6 +34,7 @@ config.default_prog = default_prog
 config.color_scheme = 'GruvboxDarkHard'
 
 config.font = wezterm.font "LiterationMono Nerd Font"
+config.font_size = 14
 
 config.disable_default_key_bindings = false
 config.window_close_confirmation = "NeverPrompt"
