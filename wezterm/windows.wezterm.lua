@@ -24,13 +24,13 @@ config.window_background_opacity = 0
 config.win32_system_backdrop = "Tabbed"
 config.window_decorations = "NONE | RESIZE"
 
--- config.default_prog = { 'pwsh', '-NoLogo' }
+--test.default_prog = { 'pwsh', '-NoLogo' }
 local default_prog = { 'nu' }
 config.default_prog = default_prog
 
 config.color_scheme = 'GruvboxDarkHard'
 
-config.font = wezterm.font "LiterationMono Nerd Font"
+config.font = wezterm.font("Lilex Nerd Font", { weight = 'Medium' })
 config.font_size = 14
 
 config.disable_default_key_bindings = false
@@ -116,42 +116,6 @@ sessionizer.config = {
 }
 
 config.keys = {
-    {
-        key = "s",
-        mods = "LEADER",
-        action = sessionizer.show,
-
-        -- action = wezterm.action_callback(function(window, pane)
-        --     local cmd = [[ "c:\Users\sam\.config\finddirs.bat" ]]
-        --     local file = io.popen(cmd, "r")
-        --     local output = file:read("*a")
-        --     file:close()
-        --
-        --     local choices = {}
-        --     for directory in string.gmatch(output, "([^\n]+)") do
-        --         table.insert(choices, { label = directory })
-        --     end
-        --
-        --     window:perform_action(
-        --         act.InputSelector {
-        --             title = "Workspaces",
-        --             choices = choices,
-        --             action = wezterm.action_callback(function(_, _, _, label)
-        --                 if label then
-        --                     window:perform_action(act.SwitchToWorkspace {
-        --                         name = label:match("([^/]+)$"),
-        --                         spawn = {
-        --                             cwd = label,
-        --                         }
-        --                     }, pane)
-        --                 end
-        --             end),
-        --             fuzzy = true,
-        --         },
-        --         pane
-        --     )
-        -- end),
-    },
     -- Send "CTRL-A" to the terminal when pressing CTRL-A, CTRL-A
     {
         key = 'a',
@@ -159,9 +123,9 @@ config.keys = {
         action = wezterm.action.SendKey { key = 'a', mods = 'CTRL' },
     },
     {
-        key = 'f',
-        mods = 'LEADER',
-        action = wezterm.action.ToggleFullScreen
+        key = "f",
+        mods = "CTRL",
+        action = sessionizer.show,
     },
     {
         key = '\\',
