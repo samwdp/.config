@@ -3,3 +3,4 @@ wezterm/wezterm.lua
 nushell/history.txt
 git
 *.exe
+op/

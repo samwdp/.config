@@ -3,7 +3,7 @@
 # version = "0.99.1"
 
 def create_left_prompt [] {
-    let dir = match (do --ignore-shell-errors { $env.PWD | path relative-to $nu.home-path }) {
+    let dir = match (do --ignore-errors { $env.PWD | path relative-to $nu.home-path }) {
         null => $env.PWD
         '' => '~'
         $relative_pwd => ([~ $relative_pwd] | path join)
@@ -100,13 +100,14 @@ $env.NU_PLUGIN_DIRS = [
 
 # To load from a custom file you can use:
 # source ($nu.default-config-dir | path join 'custom.nu')
-fnm env --shell powershell | lines |str replace "$env:" "" | split column "=" | rename name value |skip 1 | reduce -f {} {|it, acc| $acc | upsert $it.name $it.value } | load-env
 
 $env.CARAPACE_BRIDGES = 'zsh,fish,bash,inshellisense' # optional
 mkdir ~/.cache/carapace
 carapace _carapace nushell | save --force ~/.cache/carapace/init.nu
+
 mkdir ~/.cache/zoxide
 zoxide init --cmd "cd" nushell | save -f ~/.cache/zoxide/init.nu
 mkdir ~/.cache/starship
 starship init nu | save -f ~/.cache/starship/init.nu
 ## ~/.config/nushell/env.nu
+fnm env --shell powershell | lines |str replace "$env:" "" | split column "=" | rename name value |skip 1 | reduce -f {} {|it, acc| $acc | upsert $it.name $it.value } | load-env

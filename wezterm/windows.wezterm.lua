@@ -16,22 +16,23 @@ end
 config.mux_enable_ssh_agent = false
 config.max_fps = 120
 config.animation_fps = 120
-config.front_end = "OpenGL"
+-- config.front_end = "OpenGL"
 
 
 config.term = "xterm-256color" -- Set the terminal type
 config.window_background_opacity = 0
 config.win32_system_backdrop = "Tabbed"
 config.window_decorations = "NONE | RESIZE"
+-- config.default_domain = "WSL:Arch"
 
---test.default_prog = { 'pwsh', '-NoLogo' }
 local default_prog = { 'nu' }
 config.default_prog = default_prog
 
 config.color_scheme = 'GruvboxDarkHard'
 
 config.font = wezterm.font("Lilex Nerd Font", { weight = 'Medium' })
-config.font_size = 14
+
+config.font_size = 13
 
 config.disable_default_key_bindings = false
 config.window_close_confirmation = "NeverPrompt"
