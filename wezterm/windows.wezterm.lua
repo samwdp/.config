@@ -25,7 +25,7 @@ config.win32_system_backdrop = "Tabbed"
 config.window_decorations = "NONE | RESIZE"
 -- config.default_domain = "WSL:Arch"
 
-local default_prog = { 'nu' }
+local default_prog = { 'pwsh', '-NoLogo' }
 config.default_prog = default_prog
 
 config.color_scheme = 'GruvboxDarkHard'
@@ -64,6 +64,12 @@ wezterm.on('gui-startup', function(cmd)
 
     mux.set_active_workspace 'home'
 end)
+
+-- Define the paths that sessionizer uses
+local sessionizer_paths = {
+    "d:/projects",
+    "d:/work",
+}
 
 -- plugins
 local tabline = wezterm.plugin.require("https://github.com/michaelbrusegard/tabline.wez")
