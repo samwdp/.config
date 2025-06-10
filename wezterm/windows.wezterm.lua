@@ -98,8 +98,7 @@ local sessionizer = wezterm.plugin.require("https://github.com/mikkasendke/sessi
 sessionizer.apply_to_config(config)
 sessionizer.config = {
     paths = {
-        "d:/projects",
-        "d:/work",
+        "d:/",
     },
     command = {
         "fd",
