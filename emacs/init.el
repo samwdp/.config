@@ -35,7 +35,7 @@
 
 (defun sp/org-babel-tangle-config()
   (when (string-equal (buffer-file-name)
-                      (expand-file-name (concat user-emacs-directory "Emacs.org")))
+                      (expand-file-name (concat user-emacs-directory "README.org")))
     (let ((org-confirm-babel-evaluate nil))
       (org-babel-tangle))))
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'sp/org-babel-tangle-config)))
@@ -106,6 +106,75 @@
 (global-set-key [remap lookup-definition] #'xref-find-definitions)
 (global-set-key [remap lookup-reference] #'xref-find-references)
 (global-set-key [remap sp/format-buffer] #'format-all-buffer)
+
+(use-package org
+  :after evil
+  :config
+  (when IS-WINDOWS
+    (setq org-directory "c:/Users/sam/Documents/org")
+    )
+  (evil-define-key 'normal org-mode-map (kbd "C-j") 'windmove-down)
+  (evil-define-key 'normal org-mode-map (kbd "C-k") 'windmove-up)
+  (evil-define-key 'normal org-mode-map (kbd "C-h") 'windmove-left)
+  (evil-define-key 'normal org-mode-map (kbd "C-l") 'windmove-right)
+  ;; (setq org-export-with-broken-links t)
+  )
+
+(use-package toc-org
+  :hook (org-mode . toc-org-mode)
+  )
+
+(use-package org-modern
+  :hook((org-mode . org-modern-mode)
+        (org-agenda-finilize . org-modern-agenda))
+  :config
+  (setq org-modern-star 'replace))
+
+(use-package org-appear
+  :straight (org-appear :type git :fetcher github :repo "awth13/org-appear")
+  :hook (org-mode . org-appear-mode)
+  :config
+  (setq org-appear-autolinks t
+        org-appear-autoemphasis t
+        org-appear-autoentities t
+        org-appear-autokeywords t
+        org-appear-autosubmarkers t))
+
+(use-package toc-org
+  :hook (org-mode . toc-org-mode))
+
+(use-package org-fancy-priorities
+  :hook ((org-mode org-agenda-mode) . org-fancy-priorities-mode))
+
+(use-package evil-org
+  :after evil
+  :hook (org-mode . evil-org-mode))
+
+(use-package org-roam
+  :after org
+  :straight (org-roam :host github :repo "org-roam/org-roam")
+  :config
+  (setq org-roam-completion-everywhere t)
+  (when IS-WINDOWS
+    (setq org-roam-directory "c:/Users/sam/Documents/org/roam"))
+  (setq org-roam-capture-templates
+        '(("n" "notes")
+          ("nd" "default" plain "%?"
+           :target (file+head "notes/${slug}.org" "#+title: ${title}\n")
+           :create-file yes
+           :unnarrowed t)
+          ("nc" "coding" plain "%?"
+           :target (file+head "notes/coding/${slug}.org" "#+title: ${title}\n")
+           :create-file yes
+           :unnarrowed t)
+          ))
+  )
+(use-package org-roam-ui
+  :after org-roam
+  :hook (org-roam . org-roam-ui-mode)
+  :config
+  (setq org-roam-ui-sync-theme t
+        org-roam-ui-follow t))
 
 (use-package exec-path-from-shell
   :init
@@ -244,20 +313,13 @@
   ;; per mode with `ligature-mode'.
   (global-ligature-mode t))
 
-(use-package all-the-icons
-  :straight (all-the-icons :fetcher github :repo "domtronn/all-the-icons.el")
-  )
 (use-package nerd-icons)
 
-(use-package all-the-icons-completion
-  :after (marginalia all-the-icons)
-  :init
-  (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup)
-  (all-the-icons-completion-mode))
-
-(use-package all-the-icons-dired
-  :hook (dired-mode . all-the-icons-dired-mode)
-  :defer t)
+(use-package nerd-icons-completion
+  :after marginalia
+  :config
+  (nerd-icons-completion-mode)
+  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
 
 (use-package kind-icon
   :ensure t
@@ -302,46 +364,35 @@
   (advice-add 'windmove-down :around #'my-windmove-ignore-popup-and-minibuffer)
   (advice-add 'windmove-left :around #'my-windmove-ignore-popup-and-minibuffer)
   (advice-add 'windmove-right :around #'my-windmove-ignore-popup-and-minibuffer)
-  (set-popup-rules! '(("^\\*Process List\\*$"
-                       :side bottom :select t :slot -1 :vslot -1 :size +popup-shrink-to-fit)
-                      ("^\\*Buffer List\\*$"
-                       :side bottom :select t :slot -1 :vslot -1 :size +popup-shrink-to-fit)
-                      ("^\\*Embark Actions\\*$"
-                       :side bottom :select t :slot -1 :vslot -1 :size +popup-shrink-to-fit)
-                      ("^\\*Occur\\*$"
-                       :side bottom :select t :slot -1 :vslot -1 :size +popup-shrink-to-fit)
-                      ("^\\*command-log\\*$"
-                       :side bottom :select t :slot -1 :vslot -1 :size +popup-shrink-to-fit)
-                      ("^\\(?:\\*magit\\|magit:\\|\\*Embark\\*\\)"
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("^\\(?:\\*eshell\\|eshell:\\*\\)"
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("^\\*.*-eshell\\*$" ; Your new rule
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("^\\*.*-term\\*$" ; Your new rule
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("^\\*.*-shell\\*$" ; Your new rule
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("^\\(?:\\*term\\|term:\\*\\)"
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("^\\(?:\\*Copilot\\|Copilot:\\*\\)"
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("^\\(?:\\*vterm\\|vterm:\\*\\)"
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("^\\(?:\\*shell\\|shell:\\*\\)"
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("^\\(?:\\*org-brain\\|org-brain:\\*\\)"
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("^\\*Warnings\\*$"
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("^\\*Help\\*$"
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("Output\\*$"
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.4 :ttl nil)
-                      ("^\\(?:\\*Messages\\|Messages:\\*\\)"
-                       :side bottom :select t :slot -1 :vslot -1 :height 0.3 :ttl nil)))
-  ;; (setq popup-mode-enable-hacks t)
+  (set-popup-rules!  '(("^\\*"  :slot 1 :vslot -1 :select t)
+                       ("^\\*" :slot 1 :vslot -1 :size +popup-shrink-to-fit)
+                       ("^\\magit:" :slot 1 :vslot -1 :size +popup-shrink-to-fit)
+                       ))
   )
+
+(use-package adaptive-wrap)
+(use-package adaptive-word-wrap-mode
+ :straight (adaptive-word-wrap-mode :type git :host github :repo "samwdp/adaptive-word-wrap-mode")
+ :hook (after-init . global-adaptive-word-wrap-mode))
+
+(defvar sp/keys-keymap (make-keymap)
+  "Keymap for my/keys-mode")
+
+(define-minor-mode sp/keys-mode
+  "Minor mode for my personal keybindings."
+  :init-value t
+  :global t
+  :keymap sp/keys-keymap)
+
+;; The keymaps in `emulation-mode-map-alists' take precedence over
+;; `minor-mode-map-alist'
+(add-to-list 'emulation-mode-map-alists
+             `((sp/keys-mode . ,sp/keys-keymap)))
+
+(define-key sp/keys-keymap (kbd "C-j") 'windmove-down)
+(define-key sp/keys-keymap (kbd "C-h") 'windmove-left)
+(define-key sp/keys-keymap (kbd "C-k") 'windmove-up)
+(define-key sp/keys-keymap (kbd "C-l") 'windmove-right)
 
 (use-package evil
   :config
@@ -604,12 +655,23 @@
    consult--source-bookmark consult--source-file-register
    consult--source-recent-file consult--source-project-recent-file
    :preview-key '(:debounce 0.4 any))
-
   (setq consult-narrow-key "<"))
 
 (use-package embark
   :bind
-  (("C-q" . embark-act))) ;; Bind C-q to embark-act for acting on results
+  (("C-q" . embark-act)
+   ("C-#" . embark-export)) ;; Bind C-q to embark-act for acting on results
+  :config
+  
+  (evil-define-key 'normal collect-mode-map (kbd "C-j") 'windmove-down)
+  (evil-define-key 'normal collect-mode-map (kbd "C-k") 'windmove-up)
+  (evil-define-key 'normal collect-mode-map (kbd "C-h") 'windmove-left)
+  (evil-define-key 'normal collect-mode-map (kbd "C-l") 'windmove-right)
+  (evil-define-key 'normal embark-collect-mode-map (kbd "C-j") 'windmove-down)
+  (evil-define-key 'normal embark-collect-mode-map (kbd "C-k") 'windmove-up)
+  (evil-define-key 'normal embark-collect-mode-map (kbd "C-h") 'windmove-left)
+  (evil-define-key 'normal embark-collect-mode-map (kbd "C-l") 'windmove-right)
+  )
 
 (use-package embark-consult
   :ensure t ; only need to install it, embark loads it after consult if found
@@ -815,22 +877,26 @@
   (evil-collection-magit-setup)
   :commands (magit-status magit-get-current-branch))
 
-(use-package dired
-  :straight (:type built-in)
-  :hook (dired-mode . dired-hide-details-mode) 
-  :hook (dired-mode . (lambda ()
-                        (evil-collection-define-key 'normal 'dired-mode-map (kbd "SPC") nil)
-                        (evil-define-key 'normal 'dired-mode-map (kbd "SPC") nil)
-                        ))
+(use-package dirvish
   :config
-  (define-key dired-mode-map (kbd "SPC") nil)
+  (dirvish-override-dired-mode)
   (evil-define-key 'normal dired-mode-map (kbd "o") 'dired-create-empty-file)
-  )
-(use-package dired-single
+  (evil-collection-define-key 'normal 'dired-mode-map (kbd "SPC") nil)
+  (setq dirvish-attributes
+        (append
+         ;; The order of these attributes is insignificant, they are always
+         ;; displayed in the same position.
+         '(vc-state subtree-state nerd-icons collapse)
+         ;; Other attributes are displayed in the order they appear in this list.
+         '(git-msg file-size))
+        dirvish-hide-details t))
+(use-package diredfl
+  :hook
+  ((dired-mode . diredfl-mode)
+   ;; highlight parent and directory preview as well
+   (dirvish-directory-view-mode . diredfl-mode))
   :config
-  (evil-define-key 'normal dired-mode-map (kbd "h") 'dired-single-up-directory)
-  (evil-define-key 'normal dired-mode-map (kbd "l") 'dired-single-buffer)
-  )
+  (set-face-attribute 'diredfl-dir-name nil :bold t))
 
 (use-package shell
   :config
@@ -882,42 +948,6 @@
   :hook (markdown-ts-mode . evil-markdown-mode)
   :straight (evil-markdown :host github :repo "Somelauw/evil-markdown")
   )
-
-(use-package org
-  :config
-  (evil-define-key 'normal org-mode-map (kbd "C-j") 'windmove-down)
-  (evil-define-key 'normal org-mode-map (kbd "C-k") 'windmove-up)
-  (evil-define-key 'normal org-mode-map (kbd "C-h") 'windmove-left)
-  (evil-define-key 'normal org-mode-map (kbd "C-l") 'windmove-right)
-  )
-(use-package toc-org
-  :hook (org-mode . toc-org-mode)
-  )
-
-(use-package org-modern
-  :hook((org-mode . org-modern-mode)
-        (org-agenda-finilize . org-modern-agenda))
-  :config
-  (setq org-modern-star 'replace))
-
-(use-package org-appear
-  :straight (org-appear :type git :fetcher github :repo "awth13/org-appear")
-  :hook (org-mode . org-appear-mode)
-  :config
-  (setq org-appear-autolinks t
-        org-appear-autoemphasis t
-        org-appear-autoentities t
-        org-appear-autokeywords t
-        org-appear-autosubmarkers t))
-
-(use-package toc-org
-  :hook (org-mode . toc-org-mode))
-
-(use-package org-fancy-priorities
-  :hook ((org-mode org-agenda-mode) . org-fancy-priorities-mode))
-
-(use-package evil-org
-  :hook (org-mode . evil-org-mode))
 
 (use-package zig-ts-mode)
 (use-package markdown-ts-mode)
