@@ -1,4 +1,5 @@
 ;;; init.el -*- lexical-binding: t; -*-
+(envvars-load-file)
 (setq gc-cons-threshold 300000000)
 (setq read-process-output-max (* 3(* 1024 1024))) ;; 1mb
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
@@ -61,7 +62,6 @@
       blink-matching-paren nil
       set-language-environment "UTF-8")
 
-;; (set-frame-parameter nil 'alpha-background 70)
 
 (defconst IS-LINUX   (eq system-type 'gnu/linux))
 (defconst IS-WINDOWS (memq system-type '(cygwin windows-nt ms-dos)))
@@ -97,12 +97,14 @@
 (setq use-dialog-box nil)
 (global-auto-revert-mode 1)
 (setq-default display-line-numbers-type 'relative)
+(global-display-line-numbers-mode +1)
 (set-face-attribute 'default nil :family "Lilex Nerd Font" :height 120 :weight 'medium)
 (setq custom-theme-directory (concat user-emacs-directory "themes/"))
 (setq-default indent-tabs-mode nil
               tab-width 4
               fill-column 80)
-(add-hook 'prog-mode-hook 'display-line-numbers-mode)
+(global-display-fill-column-indicator-mode +1)
+
 (global-set-key [remap lookup-definition] #'xref-find-definitions)
 (global-set-key [remap lookup-reference] #'xref-find-references)
 (global-set-key [remap sp/format-buffer] #'format-all-buffer)
@@ -154,9 +156,85 @@
   :after org
   :straight (org-roam :host github :repo "org-roam/org-roam")
   :config
-  (setq org-roam-completion-everywhere t)
+    ;;; org-roam-db-sync-optimization.el
+
+;;; Commentary:
+  ;;
+  ;; This Emacs Lisp file optimizes the Org-roam database synchronization process by introducing
+  ;; a mechanism to skip unnecessary synchronization when the database file has not been modified
+  ;; since the last update. The timestamp of the last Org-roam database update is stored in an
+  ;; external file.
+
+;;; Code:
+
+  (defcustom org-roam-db-last-update-file "~/.emacs.d/org-roam-db-last-update-time"
+    "File to store the timestamp of the last Org-roam database update."
+    :type 'file
+    :group 'org-roam)
+
+  (defvar org-roam-db-last-update-time nil
+    "Timestamp of the last Org-roam database update.")
+
+  (defun org-roam-db-load-last-update-time ()
+    "Load the timestamp of the last Org-roam database update from file.
+If the file is not readable or does not exist, the timestamp remains nil."
+    (when (file-readable-p org-roam-db-last-update-file)
+      (setq org-roam-db-last-update-time
+            (with-temp-buffer
+              (insert-file-contents org-roam-db-last-update-file)
+              (read (current-buffer))))))
+
+  (defun org-roam-db-save-last-update-time ()
+    "Save the timestamp of the last Org-roam database update to file."
+    (with-temp-buffer
+      (prin1 org-roam-db-last-update-time (current-buffer))
+      (write-region (point-min) (point-max) org-roam-db-last-update-file)))
+
+  (defun org-roam-db-update-time ()
+    "Update the timestamp of the last Org-roam database update.
+This function sets the timestamp to the current time and saves it to the external file."
+    (setq org-roam-db-last-update-time (current-time))
+    (org-roam-db-save-last-update-time))
+
+  (defun org-roam-db-sync-advice (orig-fun &rest args)
+    "Advice function for org-roam-db-sync to check if syncing is necessary.
+This advice checks whether the Org-roam database file has been modified since the last update.
+If the file has been modified or the last update time is nil, it calls the original function (`org-roam-db-sync`),
+updates the timestamp, and saves it to the external file."
+    (let ((db-file-modified-time (nth 5 (file-attributes org-roam-db-location))))
+      (when (or (null org-roam-db-last-update-time)
+                (time-less-p org-roam-db-last-update-time db-file-modified-time))
+        ;; Call the original function to perform synchronization
+        (apply orig-fun args)
+        ;; Update and save the timestamp
+        (org-roam-db-update-time))))
+
+  (defun custom/org-roam-db-sync (&optional force)
+    "Temporarily remove the sync advice and do org-roam-db-sync.
+If FORCE is non-nil, force a rebuild of the cache from scratch."
+    (interactive "P")
+    (advice-remove 'org-roam-db-sync #'org-roam-db-sync-advice)
+    (org-roam-db-sync force)
+    (org-roam-db-update-time)
+    (advice-add 'org-roam-db-sync :around #'org-roam-db-sync-advice))
+
+;;; Initialization:
+
+  ;; Load the last update time when Emacs starts
+  (org-roam-db-load-last-update-time)
+
+  ;; Advising org-roam-db-sync
+  (advice-add 'org-roam-db-sync :around #'org-roam-db-sync-advice)
+
+  ;; Save the last update time when Emacs is about to exit
+  (add-hook 'kill-emacs-hook 'org-roam-db-save-last-update-time)
+
+
+;;; org-roam-db-sync-optimization.el ends here
   (when IS-WINDOWS
     (setq org-roam-directory "c:/Users/sam/Documents/org/roam"))
+  (org-roam-db-autosync-mode)
+  (setq org-roam-completion-everywhere t)
   (setq org-roam-capture-templates
         '(("n" "notes")
           ("nd" "default" plain "%?"
@@ -758,6 +836,7 @@
   (setq lsp-keymap-prefic "C-c")
   (setq lsp-diagnostics-provider :flycheck)
   (setq lsp-lens-enable nil)
+  (setq lsp-headerline-breadcrumb-enable nil)
   (defun my/lsp-mode-setup-completion ()
     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
 	      '(flex))) ;; Configure flex
@@ -786,7 +865,7 @@
                (not (functionp 'json-rpc-connection))  ;; native json-rpc
                (executable-find "emacs-lsp-booster"))
           (progn
-            (when-let ((command-from-exec-path (executable-find (car orig-result))))  ;; resolve command from exec-path (in case not found in $PATH)
+            (when-let* ((command-from-exec-path (executable-find (car orig-result))))  ;; resolve command from exec-path (in case not found in $PATH)
               (setcar orig-result command-from-exec-path))
             (message "Using emacs-lsp-booster for %s!" orig-result)
             (cons "emacs-lsp-booster" orig-result))
@@ -880,6 +959,7 @@
 (use-package dirvish
   :config
   (dirvish-override-dired-mode)
+  (setq ls-lisp-dirs-first t)
   (evil-define-key 'normal dired-mode-map (kbd "o") 'dired-create-empty-file)
   (evil-collection-define-key 'normal 'dired-mode-map (kbd "SPC") nil)
   (setq dirvish-attributes
@@ -929,25 +1009,40 @@
   )
 
 (use-package treesit-auto
-  :custom
-  (treesit-auto-install 'prompt)
+   :custom
+   (treesit-auto-install 'prompt)
+   :config
+   (setq treesit-auto-langs '(lua yaml c go gomod json markdown c-sharp javascript typescript tsx css html))
+   (treesit-auto-add-to-auto-mode-alist '(lua yaml c go gomod json markdown c-sharp javascript typescript tsx css html))
+   (global-treesit-auto-mode))
+
+ (use-package treesit
+   :straight (:type built-in)
+   :config
+   (setq treesit-font-lock-level 4)
+   ;; (add-to-list 'treesit-language-source-alist '(lua "https://github.com/tjdevries/tree-sitter-lua" "master" "src"))
+   (add-to-list 'treesit-language-source-alist '(markdown "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.5.0" "tree-sitter-markdown/src"))
+   (add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.5.0" "tree-sitter-markdown-inline/src"))
+   )
+ (use-package lua-ts-mode
+   :mode ("\\.lua\\'" . lua-ts-mode)
+   :straight (:type built-in)
+   )
+ (use-package markdown-ts-mode
+   :mode ("\\.md\\'" . markdown-ts-mode)
+   :defer 't
+   )
+(use-package treesitter-context
+  :straight (treesitter-context :host github :repo "zbelial/treesitter-context.el")
   :config
-  (setq treesit-auto-langs '(c go gomod json markdown c-sharp javascript typescript tsx css html))
-  (setq treesit-font-lock-level 4)
-  (treesit-auto-add-to-auto-mode-alist '(c go gomod json markdown c-sharp javascript typescript tsx css html))
-  (global-treesit-auto-mode))
-(use-package markdown-ts-mode
-  :mode ("\\.md\\'" . markdown-ts-mode)
-  :defer 't
-  :config
-  (add-to-list 'treesit-language-source-alist '(markdown "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.4.0" "tree-sitter-markdown/src"))
-  (add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.4.0" "tree-sitter-markdown-inline/src")))
-(use-package grip-mode)
-(use-package ox-gfm)
-(use-package evil-markdown
-  :hook (markdown-ts-mode . evil-markdown-mode)
-  :straight (evil-markdown :host github :repo "Somelauw/evil-markdown")
-  )
+  (setq treesitter-context-idle-time 0.1)
+  ) 
+ (use-package grip-mode)
+ (use-package ox-gfm)
+ (use-package evil-markdown
+   :hook (markdown-ts-mode . evil-markdown-mode)
+   :straight (evil-markdown :host github :repo "Somelauw/evil-markdown")
+   )
 
 (use-package zig-ts-mode)
 (use-package markdown-ts-mode)
