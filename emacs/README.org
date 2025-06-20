@@ -71,6 +71,7 @@ This is my literate emacs configuration for you viewing pleasure
 ** Inital settins
 #+begin_src emacs-lisp
   ;;; init.el -*- lexical-binding: t; -*-
+  (envvars-load-file)
   (setq gc-cons-threshold 300000000)
   (setq read-process-output-max (* 3(* 1024 1024))) ;; 1mb
   (setq package-archives '(("melpa" . "https://melpa.org/packages/")
@@ -108,12 +109,32 @@ This is my literate emacs configuration for you viewing pleasure
 
 ** Org babel tangle auto on save
 #+begin_src emacs-lisp
-    (defun sp/org-babel-tangle-config()
-      (when (string-equal (buffer-file-name)
-                          (expand-file-name (concat user-emacs-directory "README.org")))
-        (let ((org-confirm-babel-evaluate nil))
-          (org-babel-tangle))))
-    (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'sp/org-babel-tangle-config)))
+
+  (defun sp/new-frame ()
+    (set-face-attribute 'default nil :font (font-spec :family "Lilex Nerd Font") :height 120)
+    (set-face-attribute 'fixed-pitch nil :font (font-spec :family "Lilex Nerd Font") :height 120)
+    (when IS-WINDOWS
+      (set-frame-parameter (selected-frame) 'alpha '(98 . 98))
+      (add-to-list 'default-frame-alist '(alpha . (98 . 98)))
+      )
+    (when IS-LINUX
+      (set-frame-parameter (selected-frame) 'alpha-background 0.9 ))
+    )
+
+  (defun unicode-fonts-setup-h (frame)
+    "Run unicode-fonts-setup, then remove the hook."
+    (when (and frame (display-graphic-p frame))
+      (with-selected-frame frame
+        (require 'unicode-fonts)
+        (sp/new-frame)
+        (unicode-fonts-setup))))
+
+  (defun sp/org-babel-tangle-config()
+    (when (string-equal (buffer-file-name)
+                        (expand-file-name (concat user-emacs-directory "README.org")))
+      (let ((org-confirm-babel-evaluate nil))
+        (org-babel-tangle))))
+  (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'sp/org-babel-tangle-config)))
 #+end_src  
 
 
@@ -140,14 +161,11 @@ This is my literate emacs configuration for you viewing pleasure
         blink-matching-paren nil
         set-language-environment "UTF-8")
 
-  ;; (set-frame-parameter nil 'alpha-background 70)
 
   (defconst IS-LINUX   (eq system-type 'gnu/linux))
   (defconst IS-WINDOWS (memq system-type '(cygwin windows-nt ms-dos)))
 
   (when IS-WINDOWS
-    (set-frame-parameter (selected-frame) 'alpha '(98 . 98))
-    (add-to-list 'default-frame-alist '(alpha . (98 . 98)))
     (setq backup-directory-alist '(("." . "~/.emacs.d/backup")))
     )
 
@@ -176,12 +194,15 @@ This is my literate emacs configuration for you viewing pleasure
   (setq use-dialog-box nil)
   (global-auto-revert-mode 1)
   (setq-default display-line-numbers-type 'relative)
+  (global-display-line-numbers-mode +1)
   (set-face-attribute 'default nil :family "Lilex Nerd Font" :height 120 :weight 'medium)
+  (add-to-list 'default-frame-alist '(font . "Lilex Nerd Font-12"))
   (setq custom-theme-directory (concat user-emacs-directory "themes/"))
   (setq-default indent-tabs-mode nil
                 tab-width 4
                 fill-column 80)
-  (add-hook 'prog-mode-hook 'display-line-numbers-mode)
+  (global-display-fill-column-indicator-mode +1)
+
   (global-set-key [remap lookup-definition] #'xref-find-definitions)
   (global-set-key [remap lookup-reference] #'xref-find-references)
   (global-set-key [remap sp/format-buffer] #'format-all-buffer)
@@ -235,9 +256,85 @@ This is my literate emacs configuration for you viewing pleasure
     :after org
     :straight (org-roam :host github :repo "org-roam/org-roam")
     :config
-    (setq org-roam-completion-everywhere t)
+      ;;; org-roam-db-sync-optimization.el
+
+  ;;; Commentary:
+    ;;
+    ;; This Emacs Lisp file optimizes the Org-roam database synchronization process by introducing
+    ;; a mechanism to skip unnecessary synchronization when the database file has not been modified
+    ;; since the last update. The timestamp of the last Org-roam database update is stored in an
+    ;; external file.
+
+  ;;; Code:
+
+    (defcustom org-roam-db-last-update-file "~/.emacs.d/org-roam-db-last-update-time"
+      "File to store the timestamp of the last Org-roam database update."
+      :type 'file
+      :group 'org-roam)
+
+    (defvar org-roam-db-last-update-time nil
+      "Timestamp of the last Org-roam database update.")
+
+    (defun org-roam-db-load-last-update-time ()
+      "Load the timestamp of the last Org-roam database update from file.
+  If the file is not readable or does not exist, the timestamp remains nil."
+      (when (file-readable-p org-roam-db-last-update-file)
+        (setq org-roam-db-last-update-time
+              (with-temp-buffer
+                (insert-file-contents org-roam-db-last-update-file)
+                (read (current-buffer))))))
+
+    (defun org-roam-db-save-last-update-time ()
+      "Save the timestamp of the last Org-roam database update to file."
+      (with-temp-buffer
+        (prin1 org-roam-db-last-update-time (current-buffer))
+        (write-region (point-min) (point-max) org-roam-db-last-update-file)))
+
+    (defun org-roam-db-update-time ()
+      "Update the timestamp of the last Org-roam database update.
+  This function sets the timestamp to the current time and saves it to the external file."
+      (setq org-roam-db-last-update-time (current-time))
+      (org-roam-db-save-last-update-time))
+
+    (defun org-roam-db-sync-advice (orig-fun &rest args)
+      "Advice function for org-roam-db-sync to check if syncing is necessary.
+  This advice checks whether the Org-roam database file has been modified since the last update.
+  If the file has been modified or the last update time is nil, it calls the original function (`org-roam-db-sync`),
+  updates the timestamp, and saves it to the external file."
+      (let ((db-file-modified-time (nth 5 (file-attributes org-roam-db-location))))
+        (when (or (null org-roam-db-last-update-time)
+                  (time-less-p org-roam-db-last-update-time db-file-modified-time))
+          ;; Call the original function to perform synchronization
+          (apply orig-fun args)
+          ;; Update and save the timestamp
+          (org-roam-db-update-time))))
+
+    (defun custom/org-roam-db-sync (&optional force)
+      "Temporarily remove the sync advice and do org-roam-db-sync.
+  If FORCE is non-nil, force a rebuild of the cache from scratch."
+      (interactive "P")
+      (advice-remove 'org-roam-db-sync #'org-roam-db-sync-advice)
+      (org-roam-db-sync force)
+      (org-roam-db-update-time)
+      (advice-add 'org-roam-db-sync :around #'org-roam-db-sync-advice))
+
+  ;;; Initialization:
+
+    ;; Load the last update time when Emacs starts
+    (org-roam-db-load-last-update-time)
+
+    ;; Advising org-roam-db-sync
+    (advice-add 'org-roam-db-sync :around #'org-roam-db-sync-advice)
+
+    ;; Save the last update time when Emacs is about to exit
+    (add-hook 'kill-emacs-hook 'org-roam-db-save-last-update-time)
+
+
+  ;;; org-roam-db-sync-optimization.el ends here
     (when IS-WINDOWS
       (setq org-roam-directory "c:/Users/sam/Documents/org/roam"))
+    (org-roam-db-autosync-mode)
+    (setq org-roam-completion-everywhere t)
     (setq org-roam-capture-templates
           '(("n" "notes")
             ("nd" "default" plain "%?"
@@ -259,13 +356,12 @@ This is my literate emacs configuration for you viewing pleasure
 #+end_src  
 ** Shell things
 #+begin_src emacs-lisp
-  (use-package exec-path-from-shell
-    :init
-    (when (memq window-system '(mac ns x))
-      (exec-path-from-shell-initialize))
-    (when (daemonp)
-      (exec-path-from-shell-initialize)))
-
+  ;; (use-package exec-path-from-shell
+  ;;   :init
+  ;;   (when (memq window-system '(mac ns x))
+  ;;     (exec-path-from-shell-initialize))
+  ;;   (when (daemonp)
+  ;;     (exec-path-from-shell-initialize)))
 #+end_src  
 ** Helper packages
 #+begin_src emacs-lisp
@@ -285,11 +381,12 @@ This is my literate emacs configuration for you viewing pleasure
 *** Doom look and feel
 #+begin_src emacs-lisp
   (use-package doom-themes
+    :if (display-graphic-p)
     :init
     (load-theme 'gruvbox-sp t))
-  ;; Doom modeline
 
   (use-package doom-modeline
+    :if (display-graphic-p)
     :init
     (doom-modeline-mode 1))
 #+end_src
@@ -376,21 +473,11 @@ This is my literate emacs configuration for you viewing pleasure
 #+end_src
 *** Unicode
 #+begin_src emacs-lisp
-  (use-package unicode-fonts
-    :config
-    (defun unicode-fonts-setup-h (frame)
-      "Run unicode-fonts-setup, then remove the hook."
-      (progn
-        (select-frame frame)
-        (unicode-fonts-setup)
-        (add-to-list 'default-frame-alist '(alpha-background . 97))
-        (message "Removing unicode-fonts-setup to after-make-frame-functions hook")
-        (remove-hook 'after-make-frame-functions 'unicode-fonts-setup-h)
-        ))
-
-    (add-hook 'after-make-frame-functions 'unicode-fonts-setup-h nil)
-    :init
-    (unicode-fonts-setup))
+(use-package unicode-fonts
+  :init
+  (if (display-graphic-p)
+      (unicode-fonts-setup-h (selected-frame))
+    (add-hook 'after-make-frame-functions 'unicode-fonts-setup-h)))
 #+end_src
 *** Ligatures
 #+begin_src emacs-lisp
@@ -914,6 +1001,7 @@ This has been taken straight from Doom Emacs. This minor mode basically increase
     (setq lsp-keymap-prefic "C-c")
     (setq lsp-diagnostics-provider :flycheck)
     (setq lsp-lens-enable nil)
+    (setq lsp-headerline-breadcrumb-enable nil)
     (defun my/lsp-mode-setup-completion ()
       (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
   	      '(flex))) ;; Configure flex
@@ -942,7 +1030,7 @@ This has been taken straight from Doom Emacs. This minor mode basically increase
                  (not (functionp 'json-rpc-connection))  ;; native json-rpc
                  (executable-find "emacs-lsp-booster"))
             (progn
-              (when-let ((command-from-exec-path (executable-find (car orig-result))))  ;; resolve command from exec-path (in case not found in $PATH)
+              (when-let* ((command-from-exec-path (executable-find (car orig-result))))  ;; resolve command from exec-path (in case not found in $PATH)
                 (setcar orig-result command-from-exec-path))
               (message "Using emacs-lsp-booster for %s!" orig-result)
               (cons "emacs-lsp-booster" orig-result))
@@ -1051,6 +1139,7 @@ This has been taken straight from Doom Emacs. This minor mode basically increase
   (use-package dirvish
     :config
     (dirvish-override-dired-mode)
+    (setq ls-lisp-dirs-first t)
     (evil-define-key 'normal dired-mode-map (kbd "o") 'dired-create-empty-file)
     (evil-collection-define-key 'normal 'dired-mode-map (kbd "SPC") nil)
     (setq dirvish-attributes
@@ -1110,26 +1199,41 @@ This has been taken straight from Doom Emacs. This minor mode basically increase
 ** programming
 *** treesitter auto
 #+begin_src emacs-lisp
-  (use-package treesit-auto
-    :custom
-    (treesit-auto-install 'prompt)
+   (use-package treesit-auto
+     :custom
+     (treesit-auto-install 'prompt)
+     :config
+     (setq treesit-auto-langs '(lua yaml c go gomod json markdown c-sharp javascript typescript tsx css html))
+     (treesit-auto-add-to-auto-mode-alist '(lua yaml c go gomod json markdown c-sharp javascript typescript tsx css html))
+     (global-treesit-auto-mode))
+
+   (use-package treesit
+     :straight (:type built-in)
+     :config
+     (setq treesit-font-lock-level 4)
+     ;; (add-to-list 'treesit-language-source-alist '(lua "https://github.com/tjdevries/tree-sitter-lua" "master" "src"))
+     (add-to-list 'treesit-language-source-alist '(markdown "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.5.0" "tree-sitter-markdown/src"))
+     (add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.5.0" "tree-sitter-markdown-inline/src"))
+     )
+   (use-package lua-ts-mode
+     :mode ("\\.lua\\'" . lua-ts-mode)
+     :straight (:type built-in)
+     )
+   (use-package markdown-ts-mode
+     :mode ("\\.md\\'" . markdown-ts-mode)
+     :defer 't
+     )
+  (use-package treesitter-context
+    :straight (treesitter-context :host github :repo "zbelial/treesitter-context.el")
     :config
-    (setq treesit-auto-langs '(c go gomod json markdown c-sharp javascript typescript tsx css html))
-    (setq treesit-font-lock-level 4)
-    (treesit-auto-add-to-auto-mode-alist '(c go gomod json markdown c-sharp javascript typescript tsx css html))
-    (global-treesit-auto-mode))
-  (use-package markdown-ts-mode
-    :mode ("\\.md\\'" . markdown-ts-mode)
-    :defer 't
-    :config
-    (add-to-list 'treesit-language-source-alist '(markdown "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.4.0" "tree-sitter-markdown/src"))
-    (add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.4.0" "tree-sitter-markdown-inline/src")))
-  (use-package grip-mode)
-  (use-package ox-gfm)
-  (use-package evil-markdown
-    :hook (markdown-ts-mode . evil-markdown-mode)
-    :straight (evil-markdown :host github :repo "Somelauw/evil-markdown")
-    )
+    (setq treesitter-context-idle-time 0.1)
+    ) 
+   (use-package grip-mode)
+   (use-package ox-gfm)
+   (use-package evil-markdown
+     :hook (markdown-ts-mode . evil-markdown-mode)
+     :straight (evil-markdown :host github :repo "Somelauw/evil-markdown")
+     )
 #+end_src  
 *** other languages
 #+begin_src emacs-lisp
@@ -1146,5 +1250,85 @@ This has been taken straight from Doom Emacs. This minor mode basically increase
 
 * Early Init
 #+begin_src emacs-lisp :tangle early-init.el
-(setenv "LSP_USE_PLISTS" "true")
+  ;;; early-init.el -*- lexical-binding: t; -*-
+
+  (defvar envvars-env-file
+    (expand-file-name "emacs-env.el" user-emacs-directory)
+    "The location of your envvar file, generated by `envvars-generate-file'.")
+
+  (defvar envvars-deny
+    '(;; Unix/shell state that shouldn't be persisted
+      "^HOME$" "^\\(OLD\\)?PWD$" "^SHLVL$" "^PS1$" "^R?PROMPT$" "^TERM\\(CAP\\)?$"
+      "^USER$" "^GIT_CONFIG"
+      ;; X server, Wayland, or services' env that shouldn't be persisted
+      "^\\(WAYLAND_\\)?DISPLAY$" "^DBUS_SESSION_BUS_ADDRESS$" "^XAUTHORITY$"
+      ;; Windows+WSL envvars that shouldn't be persisted
+      "^WSL_INTEROP$"
+      ;; XDG variables that are best not persisted.
+      "^XDG_CURRENT_DESKTOP$" "^XDG_RUNTIME_DIR$"
+      "^XDG_\\(VTNR$\\|SEAT$\\|BACKEND$\\|SESSION_\\)"
+      ;; Socket envvars
+      "SOCK$"
+      ;; ssh and gpg variables
+      "^SSH_\\(AUTH_SOCK\\|AGENT_PID\\)$" "^\\(SSH\\|GPG\\)_TTY$"
+      "^GPG_AGENT_INFO$")
+    "Environment variables to omit from envvar files.
+  Each string is a regexp, matched against variable names to omit.")
+
+  (defvar envvars-allow '()
+    "Environment variables to include in envvar files.
+  This overrules `envvars-deny`. Each string is a regexp, matched against variable names.")
+
+  (defun envvars--should-include-var-p (var)
+    "Return non-nil if VAR (a string) should be included based on allow/deny lists."
+    (let ((deny (seq-some (lambda (re) (string-match-p re var)) envvars-deny))
+          (allow (seq-some (lambda (re) (string-match-p re var)) envvars-allow)))
+      (or allow (not deny))))
+
+  ;;;###autoload
+  (defun envvars-generate-file (&optional file)
+    "Generate environment variable file from current `process-environment'.
+  Write to FILE or `envvars-env-file'."
+    (interactive)
+    (let ((file (or file envvars-env-file)))
+      (with-temp-file file
+        (setq-local coding-system-for-write 'utf-8-unix)
+        (insert
+         ";; -*- mode: lisp-interaction; coding: utf-8-unix; -*-\n"
+         ";; ---------------------------------------------------------------------------\n"
+         ";; This file was auto-generated by `envvars-generate-file'. It contains a list of environment\n"
+         ";; variables scraped from your shell environment.\n"
+         ";;\n"
+         ";; It is NOT safe to edit this file. Changes will be overwritten next time you\n"
+         ";; run `envvars-generate-file'.\n"
+         "\n(")
+        (dolist (env process-environment)
+          (let ((var (car (split-string env "="))))
+            (when (envvars--should-include-var-p var)
+              (insert (prin1-to-string env) "\n "))))
+        (insert ")\n"))))
+
+  ;;;###autoload
+  (defun envvars-load-file (&optional file)
+    "Load environment variables from FILE (or `envvars-env-file') into Emacs."
+    (interactive)
+    (let ((file (or file envvars-env-file)))
+      (when (file-exists-p file)
+        (with-temp-buffer
+          (insert-file-contents file)
+          (goto-char (point-min))
+          ;; Skip comment lines
+          (while (looking-at "^;")
+            (forward-line 1))
+          (let ((env-list (read (current-buffer))))
+            (setq process-environment env-list)
+            (setenv "PATH" (getenv "PATH"))
+            (setq exec-path (split-string (getenv "PATH") path-separator t))
+            t)))))
+
+  ;;; envvars.el ends here
+  (unless (file-exists-p envvars-env-file)
+    (envvars-generate-file))
+
+  (setenv "LSP_USE_PLISTS" "true")
 #+end_src

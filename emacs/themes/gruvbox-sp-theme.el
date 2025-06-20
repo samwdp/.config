@@ -1,3 +1,4 @@
+;;; gruvbox-sp-theme.el -*- lexical-binding: t; -*-
 ;; gruvbox-sp-theme.el --- inspired by morhetz Gruvbox
 (require 'doom-themes)
 

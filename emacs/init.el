@@ -1,6 +1,4 @@
 ;;; init.el -*- lexical-binding: t; -*-
-
-(setq server-socket-dir (concat user-emacs-directory "server"))
 (envvars-load-file)
 (setq gc-cons-threshold 300000000)
 (setq read-process-output-max (* 3(* 1024 1024))) ;; 1mb
@@ -39,7 +37,13 @@
 (defun sp/new-frame ()
   (set-face-attribute 'default nil :font (font-spec :family "Lilex Nerd Font") :height 120)
   (set-face-attribute 'fixed-pitch nil :font (font-spec :family "Lilex Nerd Font") :height 120)
-  (set-frame-parameter (selected-frame) 'alpha-background 0.9 ))
+  (when IS-WINDOWS
+    (set-frame-parameter (selected-frame) 'alpha '(98 . 98))
+    (add-to-list 'default-frame-alist '(alpha . (98 . 98)))
+    )
+  (when IS-LINUX
+    (set-frame-parameter (selected-frame) 'alpha-background 0.9 ))
+  )
 
 (defun unicode-fonts-setup-h (frame)
   "Run unicode-fonts-setup, then remove the hook."
@@ -81,6 +85,13 @@
 (defconst IS-LINUX   (eq system-type 'gnu/linux))
 (defconst IS-WINDOWS (memq system-type '(cygwin windows-nt ms-dos)))
 
+(when IS-WINDOWS
+  (setq backup-directory-alist '(("." . "~/.emacs.d/backup")))
+  )
+
+(when IS-LINUX
+  (add-to-list 'default-frame-alist '(alpha-background . 97))
+  (setq backup-directory-alist '(("." . "~/.config/emacs/backup"))))
 
 (setq  backup-by-copying t    ; Don't delink hardlinks
        version-control t      ; Use version numbers on backups
@@ -281,15 +292,12 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
 (use-package transient)
 
 (use-package doom-themes
+  :if (display-graphic-p)
   :init
-(when (display-graphic-p)
-  ;; GUI code here
-(load-theme 'gruvbox-sp t)
-)
-  )
-;; Doom modeline
+  (load-theme 'gruvbox-sp t))
 
 (use-package doom-modeline
+  :if (display-graphic-p)
   :init
   (doom-modeline-mode 1))
 
@@ -1051,3 +1059,4 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
 (use-package sharper)
 (use-package csproj-mode)
 
+(provide 'init)

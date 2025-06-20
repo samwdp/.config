@@ -1,7 +1,4 @@
 ;;; early-init.el -*- lexical-binding: t; -*-
-;;; Commentary:
-;; Utilities to generate and load environment variable files for Emacs.
-;;; Code:
 
 (defvar envvars-env-file
   (expand-file-name "emacs-env.el" user-emacs-directory)
@@ -68,24 +65,17 @@ Write to FILE or `envvars-env-file'."
       (with-temp-buffer
         (insert-file-contents file)
         (goto-char (point-min))
-        (when (re-search-forward "^(\\(.*\\))" nil t)
-          (goto-char (match-beginning 0))
-          (let ((env-list (read (current-buffer))))
-            (setq process-environment env-list)
-            (setenv "PATH" (getenv "PATH"))
-            (setq exec-path (split-string (getenv "PATH") path-separator t))
-            t))))))
+        ;; Skip comment lines
+        (while (looking-at "^;")
+          (forward-line 1))
+        (let ((env-list (read (current-buffer))))
+          (setq process-environment env-list)
+          (setenv "PATH" (getenv "PATH"))
+          (setq exec-path (split-string (getenv "PATH") path-separator t))
+          t)))))
 
 ;;; envvars.el ends here
 (unless (file-exists-p envvars-env-file)
   (envvars-generate-file))
 
 (setenv "LSP_USE_PLISTS" "true")
-;; (setenv "FNM_MULTISHELL_PATH" "C:/Users/sam/AppData/Local/fnm_multishells/34936_1750396724422")
-;; (setenv "FNM_VERSION_FILE_STRATEGY" "local")
-;; (setenv "FNM_DIR" "C:/Users/sam/AppData/Roaming/fnm")
-;; (setenv "FNM_LOGLEVEL" "info")
-;; (setenv "FNM_NODE_DIST_MIRROR" "https://nodejs.org/dist")
-;; (setenv "FNM_COREPACK_ENABLED" "false")
-;; (setenv "FNM_RESOLVE_ENGINES" "true")
-;; (setenv "FNM_ARCH" "x64")
