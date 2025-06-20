@@ -1,4 +1,6 @@
 ;;; init.el -*- lexical-binding: t; -*-
+
+(setq server-socket-dir (concat user-emacs-directory "server"))
 (envvars-load-file)
 (setq gc-cons-threshold 300000000)
 (setq read-process-output-max (* 3(* 1024 1024))) ;; 1mb
@@ -34,6 +36,19 @@
   :custom
   (straight-check-for-modifications nil))
 
+(defun sp/new-frame ()
+  (set-face-attribute 'default nil :font (font-spec :family "Lilex Nerd Font") :height 120)
+  (set-face-attribute 'fixed-pitch nil :font (font-spec :family "Lilex Nerd Font") :height 120)
+  (set-frame-parameter (selected-frame) 'alpha-background 0.9 ))
+
+(defun unicode-fonts-setup-h (frame)
+  "Run unicode-fonts-setup, then remove the hook."
+  (when (and frame (display-graphic-p frame))
+    (with-selected-frame frame
+      (require 'unicode-fonts)
+      (sp/new-frame)
+      (unicode-fonts-setup))))
+
 (defun sp/org-babel-tangle-config()
   (when (string-equal (buffer-file-name)
                       (expand-file-name (concat user-emacs-directory "README.org")))
@@ -66,15 +81,6 @@
 (defconst IS-LINUX   (eq system-type 'gnu/linux))
 (defconst IS-WINDOWS (memq system-type '(cygwin windows-nt ms-dos)))
 
-(when IS-WINDOWS
-  (set-frame-parameter (selected-frame) 'alpha '(98 . 98))
-  (add-to-list 'default-frame-alist '(alpha . (98 . 98)))
-  (setq backup-directory-alist '(("." . "~/.emacs.d/backup")))
-  )
-
-(when IS-LINUX
-  (add-to-list 'default-frame-alist '(alpha-background . 97))
-  (setq backup-directory-alist '(("." . "~/.config/emacs/backup"))))
 
 (setq  backup-by-copying t    ; Don't delink hardlinks
        version-control t      ; Use version numbers on backups
@@ -99,6 +105,7 @@
 (setq-default display-line-numbers-type 'relative)
 (global-display-line-numbers-mode +1)
 (set-face-attribute 'default nil :family "Lilex Nerd Font" :height 120 :weight 'medium)
+(add-to-list 'default-frame-alist '(font . "Lilex Nerd Font-12"))
 (setq custom-theme-directory (concat user-emacs-directory "themes/"))
 (setq-default indent-tabs-mode nil
               tab-width 4
@@ -254,12 +261,12 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
   (setq org-roam-ui-sync-theme t
         org-roam-ui-follow t))
 
-(use-package exec-path-from-shell
-  :init
-  (when (memq window-system '(mac ns x))
-    (exec-path-from-shell-initialize))
-  (when (daemonp)
-    (exec-path-from-shell-initialize)))
+;; (use-package exec-path-from-shell
+;;   :init
+;;   (when (memq window-system '(mac ns x))
+;;     (exec-path-from-shell-initialize))
+;;   (when (daemonp)
+;;     (exec-path-from-shell-initialize)))
 
 (use-package no-littering)
 (use-package s)
@@ -275,7 +282,11 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
 
 (use-package doom-themes
   :init
-  (load-theme 'gruvbox-sp t))
+(when (display-graphic-p)
+  ;; GUI code here
+(load-theme 'gruvbox-sp t)
+)
+  )
 ;; Doom modeline
 
 (use-package doom-modeline
@@ -351,20 +362,10 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
   (golden-ratio-mode +1))
 
 (use-package unicode-fonts
-  :config
-  (defun unicode-fonts-setup-h (frame)
-    "Run unicode-fonts-setup, then remove the hook."
-    (progn
-      (select-frame frame)
-      (unicode-fonts-setup)
-      (add-to-list 'default-frame-alist '(alpha-background . 97))
-      (message "Removing unicode-fonts-setup to after-make-frame-functions hook")
-      (remove-hook 'after-make-frame-functions 'unicode-fonts-setup-h)
-      ))
-
-  (add-hook 'after-make-frame-functions 'unicode-fonts-setup-h nil)
   :init
-  (unicode-fonts-setup))
+  (if (display-graphic-p)
+      (unicode-fonts-setup-h (selected-frame))
+    (add-hook 'after-make-frame-functions 'unicode-fonts-setup-h)))
 
 (use-package ligature
   :config
@@ -1050,4 +1051,3 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
 (use-package sharper)
 (use-package csproj-mode)
 
-(provide 'init)

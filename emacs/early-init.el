@@ -1,5 +1,4 @@
 ;;; early-init.el -*- lexical-binding: t; -*-
-;;; envvars.el --- Generic environment variable file generator and loader -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;; Utilities to generate and load environment variable files for Emacs.
 ;;; Code:
@@ -82,3 +81,11 @@ Write to FILE or `envvars-env-file'."
   (envvars-generate-file))
 
 (setenv "LSP_USE_PLISTS" "true")
+;; (setenv "FNM_MULTISHELL_PATH" "C:/Users/sam/AppData/Local/fnm_multishells/34936_1750396724422")
+;; (setenv "FNM_VERSION_FILE_STRATEGY" "local")
+;; (setenv "FNM_DIR" "C:/Users/sam/AppData/Roaming/fnm")
+;; (setenv "FNM_LOGLEVEL" "info")
+;; (setenv "FNM_NODE_DIST_MIRROR" "https://nodejs.org/dist")
+;; (setenv "FNM_COREPACK_ENABLED" "false")
+;; (setenv "FNM_RESOLVE_ENGINES" "true")
+;; (setenv "FNM_ARCH" "x64")
