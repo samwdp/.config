@@ -1,5 +1,4 @@
 ;;; init.el -*- lexical-binding: t; -*-
-(envvars-load-file)
 (setq gc-cons-threshold 300000000)
 (setq read-process-output-max (* 3(* 1024 1024))) ;; 1mb
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
@@ -278,6 +277,23 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
 ;;     (exec-path-from-shell-initialize))
 ;;   (when (daemonp)
 ;;     (exec-path-from-shell-initialize)))
+(use-package undo-tree
+  :after evil
+  :config
+  (evil-global-set-key 'normal (kbd "u") 'undo-tree-undo)
+  (evil-global-set-key 'normal (kbd "C-r") 'undo-tree-redo)
+  (setq undo-tree-visualizer-diff t
+        undo-tree-auto-save-history t
+        undo-tree-enable-undo-in-region t
+        ;; Increase undo limits to avoid emacs prematurely truncating the undo
+        ;; history and corrupting the tree. This is larger than the undo-fu
+        ;; defaults because undo-tree trees consume exponentially more space,
+        ;; and then some when `undo-tree-enable-undo-in-region' is involved. See
+        ;; syl20bnr/spacemacs#12110
+        undo-limit 800000           ; 800kb (default is 160kb)
+        undo-strong-limit 12000000  ; 12mb  (default is 240kb)
+        undo-outer-limit 128000000) ; 128mb (default is 24mb)
+  :init (global-undo-tree-mode))
 
 (use-package no-littering)
 (use-package s)
@@ -292,12 +308,10 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
 (use-package transient)
 
 (use-package doom-themes
-  :if (display-graphic-p)
   :init
   (load-theme 'gruvbox-sp t))
 
 (use-package doom-modeline
-  :if (display-graphic-p)
   :init
   (doom-modeline-mode 1))
 
@@ -322,7 +336,7 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
          (git-commit-mode . hl-todo-mode))
   :config
   (setq hl-todo-highlight-punctuation ":"
-        hl-todo--regexp "\\(\\<\\(FIX\\|fix\\|FEAT\\|feat\\|TODO\\|todo\\|FIXME\\|fixme\\|HACK\\|hack\\|REVIEW\\|review\\|NOTE\\|note\\|DEPRECATED\\|deprecated\\|BUG\\|bug\\|XXX\\)\\>[:]*\\)"
+        hl-todo--regexp "\\(\\<\\(HOTFIX\\|hotfix\\|FIX\\|fix\\|FEAT\\|feat\\|TODO\\|todo\\|FIXME\\|fixme\\|HACK\\|hack\\|REVIEW\\|review\\|NOTE\\|note\\|DEPRECATED\\|deprecated\\|BUG\\|bug\\|XXX\\)\\>[:]*\\)"
         hl-todo-keyword-faces
         `(;; For things that need to be done, just not today.
           ("feat" font-lock-function-call-face bold)
@@ -331,6 +345,8 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
           ("todo" warning bold)
           ;; For problems that will become bigger problems later if not
           ;; fixed ASAP.
+          ("hotfix" error bold)
+          ("HOTFIX" error bold)
           ("FIXME" error bold)
           ("fixme" error bold)
           ("FIX" error bold)
@@ -578,9 +594,15 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
     "dw" '(delete-window :wk "[D]elete [W]indow")
     "dp" '(+popup/close :wk "[D]elete [W]indow")
     "pp" '(+popup/toggle :wk "[D]elete [W]indow")
+    "h" '(:ignore t :wk "[H]arpoon")
+    "ha" '(harpoon-add-file :wk "[H]arpoon [A]dd")
+    "he" '(harpoon-toggle-quick-menu :wk "[H]arpoon [E]dit")
     ;; git
     "g" '(:ignore t :wk "[G]it")
     "gs" '(magit-status :wk "[G]it [S]tatus")
+    ;; instert
+    "i" '(:ignore t :wk "[I]nsert")
+    "is" '(consult-yasnippet :wk "[I]nsert [S]nippet")
     ;; open things
     "o" '(:ignore t :wk "[O]pen")
     "oe" '(project-eshell t :wk "[O]pen [E]shell")
@@ -598,6 +620,11 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
    "C-f" '(project-switch-project :wk "switch project")
    "C-+" 'text-scale-increase
    (kbd "C--") 'text-scale-increase
+   "C-M-n" 'harpoon-go-to-1
+   "C-M-e" 'harpoon-go-to-2
+   "C-M-o" 'harpoon-go-to-3
+   "C-M-i" 'harpoon-go-to-4
+   "C-M-=" 'harpoon-go-to-5
    "C-h" 'windmove-left
    "C-l" 'windmove-right
    "C-k" 'windmove-up
@@ -622,6 +649,7 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
   :straight (:type built-in)
   :config
   (evil-global-set-key 'normal (kbd "C-f") 'project-switch-project)
+  (evil-global-set-key 'normal (kbd "<f5>") 'project-compile)
   )
 
 (use-package consult-project-extra
@@ -655,6 +683,190 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
   (setq gptel-default-mode 'org-mode)
   (setq gptel-model 'o4-mini
         gptel-backend (gptel-make-gh-copilot "Copilot"))
+  ;; Enable tool use
+  (setq gptel-use-tools t)
+
+  ;; Add a tool to gptel-tools
+  (add-to-list 'gptel-tools
+               (gptel-make-tool
+                :name "read_url"
+                :function (lambda (url) 
+                            ;; function implementation
+                            )
+                :description "Fetch and read the contents of a URL"
+                :args (list '(:name "url"
+                                    :type string
+                                    :description "The URL to read"))
+                :category "web"))
+  (gptel-make-tool
+   :function (lambda (filepath)
+               (with-temp-buffer
+                 (insert-file-contents (expand-file-name filepath))
+                 (buffer-string)))
+   :name "read_file"
+   :description "Read and display the contents of a file"
+   :args (list '(:name "filepath"
+                       :type string
+                       :description "Path to the file to read. Supports relative paths and ~."))
+   :category "filesystem")
+  (gptel-make-tool
+   :function (lambda (directory)
+               (mapconcat #'identity
+                          (directory-files directory)
+                          "\n"))
+   :name "list_directory"
+   :description "List the contents of a given directory"
+   :args (list '(:name "directory"
+                       :type string
+                       :description "The path to the directory to list"))
+   :category "filesystem")
+  (gptel-make-tool
+   :function (lambda (directory)
+               (mapconcat #'identity
+                          (directory-files directory)
+                          "\n"))
+   :name "list_directory"
+   :description "List the contents of a given directory"
+   :args (list '(:name "directory"
+                       :type string
+                       :description "The path to the directory to list"))
+   :category "filesystem")
+  (gptel-make-tool
+   :function (lambda (parent name)
+               (condition-case nil
+                   (progn
+                     (make-directory (expand-file-name name parent) t)
+                     (format "Directory %s created/verified in %s" name parent))
+                 (error (format "Error creating directory %s in %s" name parent))))
+   :name "make_directory"
+   :description "Create a new directory with the given name in the specified parent directory"
+   :args (list '(:name "parent"
+                       :type string
+                       :description "The parent directory where the new directory should be created, e.g. /tmp")
+               '(:name "name"
+                       :type string
+                       :description "The name of the new directory to create, e.g. testdir"))
+   :category "filesystem")
+  (gptel-make-tool
+   :function (lambda (path filename content)
+               (let ((full-path (expand-file-name filename path)))
+                 (with-temp-buffer
+                   (insert content)
+                   (write-file full-path))
+                 (format "Created file %s in %s" filename path)))
+   :name "create_file"
+   :description "Create a new file with the specified content"
+   :args (list '(:name "path"
+                       :type string
+                       :description "The directory where to create the file")
+               '(:name "filename"
+                       :type string
+                       :description "The name of the file to create")
+               '(:name "content"
+                       :type string
+                       :description "The content to write to the file"))
+   :category "filesystem")
+  (defun my-gptel--edit_file (file-path file-edits)
+    "In FILE-PATH, apply FILE-EDITS with pattern matching and replacing."
+    (if (and file-path (not (string= file-path "")) file-edits)
+        (with-current-buffer (get-buffer-create "*edit-file*")
+          (erase-buffer)
+          (insert-file-contents (expand-file-name file-path))
+          (let ((inhibit-read-only t)
+                (case-fold-search nil)
+                (file-name (expand-file-name file-path))
+                (edit-success nil))
+            ;; apply changes
+            (dolist (file-edit (seq-into file-edits 'list))
+              (when-let ((line-number (plist-get file-edit :line_number))
+                         (old-string (plist-get file-edit :old_string))
+                         (new-string (plist-get file-edit :new_string))
+                         (is-valid-old-string (not (string= old-string ""))))
+                (goto-char (point-min))
+                (forward-line (1- line-number))
+                (when (search-forward old-string nil t)
+                  (replace-match new-string t t)
+                  (setq edit-success t))))
+            ;; return result to gptel
+            (if edit-success
+                (progn
+                  ;; show diffs
+                  (ediff-buffers (find-file-noselect file-name) (current-buffer))
+                  (format "Successfully edited %s" file-name))
+              (format "Failed to edited %s" file-name))))
+      (format "Failed to edited %s" file-path)))
+
+  (gptel-make-tool
+   :function #'my-gptel--edit_file
+   :name "edit_file"
+   :description "Edit file with a list of edits, each edit contains a line-number,
+  a old-string and a new-string, new-string will replace the old-string at the specified line."
+   :args (list '(:name "file-path"
+                       :type string
+                       :description "The full path of the file to edit")
+               '(:name "file-edits"
+                       :type array
+                       :items (:type object
+                                     :properties
+                                     (:line_number
+                                      (:type integer :description "The line number of the file where edit starts.")
+                                      :old_string
+                                      (:type string :description "The old-string to be replaced.")
+                                      :new_string
+                                      (:type string :description "The new-string to replace old-string.")))
+                       :description "The list of edits to apply on the file"))
+   :category "filesystem")
+  (gptel-make-tool
+   :function (lambda (command &optional working_dir)
+               (with-temp-message (format "Executing command: `%s`" command)
+                 (let ((default-directory (if (and working_dir (not (string= working_dir "")))
+                                              (expand-file-name working_dir)
+                                            default-directory)))
+                   (shell-command-to-string command))))
+   :name "run_command"
+   :description "Executes a shell command and returns the output as a string. IMPORTANT: This tool allows execution of arbitrary code; user confirmation will be required before any command is run."
+   :args (list
+          '(:name "command"
+                  :type string
+                  :description "The complete shell command to execute.")
+          '(:name "working_dir"
+                  :type string
+                  :description "Optional: The directory in which to run the command. Defaults to the current directory if not specified."))
+   :category "command"
+   :confirm t
+   :include t)
+
+  (defun run_async_command (callback command)
+    "Run COMMAND asynchronously and pass output to CALLBACK."
+    (condition-case error
+        (let ((buffer (generate-new-buffer " *async output*")))
+          (with-temp-message (format "Running async command: %s" command)
+            (async-shell-command command buffer nil))
+          (let ((proc (get-buffer-process buffer)))
+            (when proc
+              (set-process-sentinel
+               proc
+               (lambda (process _event)
+                 (unless (process-live-p process)
+                   (with-current-buffer (process-buffer process)
+                     (let ((output (buffer-substring-no-properties (point-min) (point-max))))
+                       (kill-buffer (current-buffer))
+                       (funcall callback output)))))))))
+      (t
+       ;; Handle any kind of error
+       (funcall callback (format "An error occurred: %s" error)))))
+
+  (gptel-make-tool
+   :function #'run_async_command
+   :name "run_async_command"
+   :description "Run an async command."
+   :args (list
+          '(:name "command"
+                  :type "string"
+                  :description "Command to run."))
+   :category "command"
+   :async t
+   :include t)
   )
 
 (use-package copilot
@@ -767,24 +979,34 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
 
 (use-package corfu
   :bind (:map corfu-map
-              ("C-y" . corfu-insert)
               ("TAB" . nil)
+              ("M-p" . nil)
+              ("M-n" . nil)
               ("<tab>" . nil))
+  :config
+  (with-eval-after-load 'corfu
+    (define-key corfu-map (kbd "C-y") #'corfu-insert))
   :custom
   (corfu-auto t)
   (corfu-preselect 'insert)
   (corfu-cycle t)
   (corfu-auto-prefix 2)
-  (corfu-popupinfo-delay '(0.5 . 0.2))
+  (corfu-popupinfo-delay '(0.1 . 0.2))
   (corfu-auto-delay 0)
   (corfu-quit-at-boundary 'separator)
   (corfu-preview-current 'insert)
   (corfu-on-exact-match nil)
-  (corfu-preselect 'prompt)
+  (corfu-preselect 'first)
   :init
   (global-corfu-mode)
   (corfu-history-mode)
   (corfu-popupinfo-mode))
+(use-package corfu-terminal
+  :straight (corfu-terminal :type git :repo "https://codeberg.org/akib/emacs-corfu-terminal.git")
+  :config
+  (unless (display-graphic-p)
+    (corfu-terminal-mode +1))
+  )
 
 (use-package marginalia
   :after vertico
@@ -797,6 +1019,45 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
         completion-category-defaults nil
         completion-category-overrides '((file (styles basic partial-completion)))))
 
+;;;###autoload
+(defun lsp/switch-client (client)
+  "Switch to another LSP server CLIENT for the current buffer."
+  (interactive
+   (progn
+     (require 'lsp-mode)
+     (list (completing-read
+            "Select server: "
+            (or (mapcar #'lsp--client-server-id
+                        (lsp--filter-clients
+                         (lambda (c)
+                           (and (lsp--supports-buffer? c)
+                                (lsp--server-binary-present? c)))))
+                (user-error "No available LSP clients for %S" major-mode))))))
+  (require 'lsp-mode)
+  (let* ((client-sym (if (symbolp client) client (intern client)))
+         (match (car (lsp--filter-clients
+                      (lambda (c) (eq (lsp--client-server-id c) client-sym)))))
+         (workspaces (lsp-workspaces)))
+    (unless match
+      (user-error "Couldn't find an LSP client named %S" client))
+    (let ((old-priority (lsp--client-priority match)))
+      (setf (lsp--client-priority match) 9999)
+      (unwind-protect
+          (if workspaces
+              (lsp-workspace-restart
+               (if (cdr workspaces)
+                   (completing-read
+                    "Select LSP workspace: "
+                    (mapcar #'lsp--workspace-print workspaces)
+                    nil t)
+                 (car workspaces)))
+            (lsp-mode +1))
+        ;; Restore priority after initialization
+        (add-hook
+         'lsp-after-initialize-hook
+         (lambda ()
+           (setf (lsp--client-priority match) old-priority))
+         nil 'local)))))
 ;; lsp
 (defvar +lsp--default-read-process-output-max nil)
 (defvar +lsp--default-gcmh-high-cons-threshold nil)
@@ -826,6 +1087,7 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
       (setq +lsp--optimization-init-p t))))
 
 (use-package lsp-mode
+  :straight (:host github :repo "emacs-lsp/lsp-mode")
   :hook ((typescript-ts-mode . lsp-deferred)
          (html-ts-mode . lsp-deferred)
          (go-ts-mode . lsp-deferred)
@@ -833,8 +1095,8 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
          (rust-ts-mode . lsp-deferred)
          (tsx-ts-mode . lsp-deferred)
          (js-ts-mode . lsp-deferred)
+         (odin-ts-mode . lsp-deferred)
          (lsp-mode . lsp-optimization-mode)
-         (lsp-mode . lsp-signature-mode)
          (lsp-completion-mode . my/lsp-mode-setup-completion)
          )
   :commands lsp-deferred
@@ -844,11 +1106,13 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
   :init
   (setq lsp-keymap-prefic "C-c")
   (setq lsp-diagnostics-provider :flycheck)
-  (setq lsp-lens-enable nil)
+  (setq lsp-lens-enable nil
+        lsp-signature-auto-activate nil
+        lsp-signature-function 'lsp-signature-posframe)
   (setq lsp-headerline-breadcrumb-enable nil)
   (defun my/lsp-mode-setup-completion ()
     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-	      '(flex))) ;; Configure flex
+          '(flex))) ;; Configure flex
   :config
   (defun lsp-booster--advice-json-parse (old-fn &rest args)
     "Try to parse bytecode instead of json."
@@ -887,35 +1151,28 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
   (define-key lsp-mode-map [remap lookup-reference] #'lsp-find-references)
   (define-key lsp-mode-map [remap lookup-definition] #'lsp-find-definition)
   (define-key lsp-mode-map [remap lookup-type-definition] #'lsp-goto-type-definition)
-  (define-key lsp-mode-map [remap lookup-doc] #'lsp-ui-doc-glance)
   (define-key lsp-mode-map [remap sp/format-buffer] #'lsp-format-buffer)
   (evil-define-key 'normal lsp-mode-map (kbd "SPC c a") 'lsp-execute-code-action)
   (evil-global-set-key 'normal (kbd "C-SPC") 'lsp-execute-code-action)
   (advice-add 'lsp-completion-at-point :around #'cape-wrap-buster)
-  (advice-add 'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
-  )
+  (advice-add 'lsp-completion-at-point :around #'cape-wrap-noninterruptible))
 
 (use-package lsp-ui
   :hook ((lsp-mode . lsp-ui-mode))
   :init
-  (evil-define-key 'normal lsp-ui-mode-map (kbd "K") 'lsp-ui-doc-glance)
+  ;; (evil-define-key 'normal lsp-ui-mode-map (kbd "K") 'lsp-ui-doc-glance)
   (evil-define-key 'normal lsp-ui-mode-map (kbd "TAB") 'lsp-ui-doc-focus-frame)
   (evil-define-key 'normal lsp-ui-doc-frame-mode-map (kbd "<escape>") 'lsp-ui-doc-hide)
   (evil-define-key 'normal lsp-ui-doc-frame-mode-map (kbd "q") 'lsp-ui-doc-hide)
   :config
   (setq lsp-ui-doc-enable t
-        lsp-ui-doc-position 'at-point
-        lsp-ui-doc-show-with-cursor nil
-        lsp-ui-doc-include-signature t
-        lsp-signature-auto-activate t
-        lsp-signature-render-documentation t
         lsp-ui-peek-enable t
-        lsp-ui-sideline-show-code-actions t
+        lsp-ui-doc-position 'at-point
+        lsp-ui-doc-show-with-mouse nil
         lsp-ui-sideline-ignore-duplicate t
         lsp-ui-sideline-show-hover nil
-        lsp-ui-sideline-show-diagnostics t
-        lsp-ui-sideline-show-symbol t
         lsp-ui-sideline-actions-icon lsp-ui-sideline-actions-icon-default)
+  (define-key lsp-mode-map [remap evil-lookup] #'lsp-ui-doc-glance)
 
   (define-key lsp-ui-peek-mode-map (kbd "j") #'lsp-ui-peek--select-next)
   (define-key lsp-ui-peek-mode-map (kbd "k") #'lsp-ui-peek--select-prev)
@@ -923,8 +1180,20 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
   (define-key lsp-ui-peek-mode-map (kbd "M-j") #'lsp-ui-peek--select-prev-file))
 
 
-(use-package consult-lsp
-  :defer t)
+
+  (use-package consult-lsp
+    :defer t)
+
+  (use-package treemacs)
+  (use-package treemacs-nerd-icons
+  :config
+  (treemacs-load-theme "nerd-icons"))
+  (use-package lsp-treemacs-nerd-icons
+    :after nerd-icons
+    :straight (:host github :repo "Velnbur/lsp-treemacs-nerd-icons")
+    :init (with-eval-after-load 'lsp-treemacs
+            (require 'lsp-treemacs-nerd-icons))
+    )
 
 (use-package flycheck
   :hook (lsp-mode . flycheck-mode)
@@ -939,10 +1208,46 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
 
 (use-package format-all)
 
+(use-package yasnippet
+  :init (yas-global-mode))
+
+(use-package yasnippet-capf
+  :after cape
+  :straight (yasnippet-capf :fetcher github :repo "elken/yasnippet-capf")
+  :config
+  (add-to-list 'completion-at-point-functions #'yasnippet-capf)
+  )
+
+(use-package consult-yasnippet)
+
+(use-package yasnippet-snippets)
+
+(use-package competitive-programming-snippets)
+
 (use-package dap-mode
   :commands dap-debug
   :hook (dap-mode . dap-tooltip-mode)
   :config
+  
+  (defvar my/golden-ratio-was-on t
+    "Remember whether `golden-ratio-mode' was on before starting DAP.")
+
+  (defun my/dap-disable-golden-ratio (&rest _)
+    "Disable `golden-ratio-mode' when DAP session starts."
+    (setq my/golden-ratio-was-on golden-ratio-mode)
+    (when golden-ratio-mode
+      (golden-ratio-mode -1)))
+
+  (defun my/dap-restore-golden-ratio (&rest _)
+    "Re-enable `golden-ratio-mode' if it was on before DAP."
+    (when my/golden-ratio-was-on
+      (golden-ratio-mode +1)))
+
+  ;; Hook into DAP session start/end
+  (with-eval-after-load 'dap-mode
+    (add-hook 'dap-session-created-hook    #'my/dap-disable-golden-ratio)
+    (add-hook 'dap-terminated-hook         #'my/dap-restore-golden-ratio)
+    (add-hook 'dap-exited-hook             #'my/dap-restore-golden-ratio))
   (require 'dap-node)
   (require 'dap-chrome)
   (require 'dap-firefox)
@@ -951,7 +1256,6 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
   (require 'dap-lldb)
   (require 'dap-cpptools))
 
-;; builtin packages
 (use-package magit
   :defer t
   :hook (magit-mode . (lambda ()
@@ -962,6 +1266,7 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
   (when IS-WINDOWS
     (setq magit-git-executable "C:/Program Files/Git/bin/git.exe")
     )
+  (setq git-commit-major-mode 'git-commit-ts-mode)
   (evil-collection-magit-setup)
   :commands (magit-status magit-get-current-branch))
 
@@ -1017,46 +1322,76 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
   (eshell-did-you-mean-setup)
   )
 
-(use-package treesit-auto
-   :custom
-   (treesit-auto-install 'prompt)
-   :config
-   (setq treesit-auto-langs '(lua yaml c go gomod json markdown c-sharp javascript typescript tsx css html))
-   (treesit-auto-add-to-auto-mode-alist '(lua yaml c go gomod json markdown c-sharp javascript typescript tsx css html))
-   (global-treesit-auto-mode))
+(use-package harpoon
+  :config
+ (setq harpoon-project-package 'project) 
+  )
 
- (use-package treesit
-   :straight (:type built-in)
-   :config
-   (setq treesit-font-lock-level 4)
-   ;; (add-to-list 'treesit-language-source-alist '(lua "https://github.com/tjdevries/tree-sitter-lua" "master" "src"))
-   (add-to-list 'treesit-language-source-alist '(markdown "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.5.0" "tree-sitter-markdown/src"))
-   (add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.5.0" "tree-sitter-markdown-inline/src"))
-   )
- (use-package lua-ts-mode
-   :mode ("\\.lua\\'" . lua-ts-mode)
-   :straight (:type built-in)
-   )
- (use-package markdown-ts-mode
-   :mode ("\\.md\\'" . markdown-ts-mode)
-   :defer 't
-   )
+(use-package treesit-auto
+  :custom
+  (treesit-auto-install 'prompt)
+  :config
+  (setq treesit-auto-langs '(lua yaml c go gomod json markdown c-sharp javascript typescript tsx css html))
+  (treesit-auto-add-to-auto-mode-alist '(lua yaml c go gomod json markdown c-sharp javascript typescript tsx css html))
+  (global-treesit-auto-mode))
+
+(use-package treesit
+  :straight (:type built-in)
+  :config
+  (setq treesit-font-lock-level 4)
+  ;; (add-to-list 'treesit-language-source-alist '(lua "https://github.com/tjdevries/tree-sitter-lua" "master" "src"))
+  (add-to-list 'treesit-language-source-alist '(markdown "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.5.0" "tree-sitter-markdown/src"))
+  (add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "v0.5.0" "tree-sitter-markdown-inline/src"))
+  (add-to-list 'treesit-language-source-alist '(odin "https://github.com/tree-sitter-grammars/tree-sitter-odin"))
+  (add-to-list 'treesit-language-source-alist '(gitcommit "https://github.com/gbprod/tree-sitter-gitcommit" "v0.3.3" "src"))
+  (add-to-list 'treesit-language-source-alist '(zig "https://github.com/maxxnino/tree-sitter-zig"))
+  )
+
+(use-package treesit-context-overlay
+  :straight (treesit-context-overlay :host github :repo "samwdp/treesit-context-overlay")
+  :hook ((csharp-ts-mode . treesit-context-overlay-mode)
+         (typescript-ts-mode . treesit-context-overlay-mode))
+  :config
+  (setq treesit-context-overlay-face "#bdae93"
+        treesit-context-overlay-delimiter "=>")
+  )
+
+(use-package lua-ts-mode
+  :mode ("\\.lua\\'" . lua-ts-mode)
+  :straight (:type built-in)
+  )
+(use-package markdown-ts-mode
+  :mode ("\\.md\\'" . markdown-ts-mode)
+  :defer 't
+  )
 (use-package treesitter-context
   :straight (treesitter-context :host github :repo "zbelial/treesitter-context.el")
   :config
   (setq treesitter-context-idle-time 0.1)
   ) 
- (use-package grip-mode)
- (use-package ox-gfm)
- (use-package evil-markdown
-   :hook (markdown-ts-mode . evil-markdown-mode)
-   :straight (evil-markdown :host github :repo "Somelauw/evil-markdown")
-   )
+(use-package grip-mode)
+(use-package ox-gfm)
+(use-package evil-markdown
+  :hook (markdown-ts-mode . evil-markdown-mode)
+  :straight (evil-markdown :host github :repo "samwdp/evil-markdown")
+  )
 
 (use-package zig-ts-mode)
 (use-package markdown-ts-mode)
 (use-package templ-ts-mode)
 (use-package sharper)
 (use-package csproj-mode)
+(use-package odin-ts-mode
+  :straight (:host github :repo "Sampie159/odin-ts-mode")
+  :mode ("\\.odin\\'" . odin-ts-mode))
+
+(use-package web-mode
+  :config
+  (add-to-list 'auto-mode-alist '("\\.cshtml?\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.razor?\\'" . web-mode))
+  (add-to-list 'web-mode-engines-alist '(("razor" . "\\.cshtml\\'")))
+  )
+(use-package git-commit-ts-mode
+:mode "\\COMMIT_EDITMSG\\'")
 
 (provide 'init)

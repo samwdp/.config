@@ -78,4 +78,5 @@ Write to FILE or `envvars-env-file'."
 (unless (file-exists-p envvars-env-file)
   (envvars-generate-file))
 
+(envvars-load-file)
 (setenv "LSP_USE_PLISTS" "true")

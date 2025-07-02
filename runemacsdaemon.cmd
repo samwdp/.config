@@ -1,3 +1,3 @@
 @ECHO OFF
 
-pwsh -c "c:\tools\emacs\bin\runemacs --daemon"
+c:\tools\emacs\bin\runemacs --daemon
