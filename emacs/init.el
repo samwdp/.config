@@ -689,6 +689,7 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
     "h" '(:ignore t :wk "[H]arpoon")
     "ha" '(harpoon-add-file :wk "[H]arpoon [A]dd")
     "he" '(harpoon-toggle-quick-menu :wk "[H]arpoon [E]dit")
+    "hc" '(harpoon-clear :wk "[H]arpoon [C]lear")
     ;; git
     "g" '(:ignore t :wk "[G]it")
     "gs" '(magit-status :wk "[G]it [S]tatus")
@@ -718,7 +719,7 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
    "C-M-e" 'harpoon-go-to-2
    "C-M-o" 'harpoon-go-to-3
    "C-M-i" 'harpoon-go-to-4
-   "C-M-=" 'harpoon-go-to-5
+   "C-M-=" 'harpoon-toggle-file
    "C-h" 'windmove-left
    "C-l" 'windmove-right
    "C-k" 'windmove-up
