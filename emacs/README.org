@@ -112,8 +112,8 @@ This is my literate emacs configuration for you viewing pleasure
 #+begin_src emacs-lisp
 
   (defun sp/new-frame ()
-    (set-face-attribute 'default nil :font (font-spec :family "Lilex Nerd Font") :height 120)
-    (set-face-attribute 'fixed-pitch nil :font (font-spec :family "Lilex Nerd Font") :height 120)
+    (set-face-attribute 'default nil :font (font-spec :family "RecMonoLinear Nerd Font") :height 140 :weight 'normal)
+    (set-face-attribute 'fixed-pitch nil :font (font-spec :family "RecMonoLinear Nerd Font") :height 140)
     (when IS-WINDOWS
       (set-frame-parameter (selected-frame) 'alpha '(98 . 98))
       (add-to-list 'default-frame-alist '(alpha . (98 . 98)))
@@ -196,8 +196,7 @@ This is my literate emacs configuration for you viewing pleasure
   (global-auto-revert-mode 1)
   (setq-default display-line-numbers-type 'relative)
   (global-display-line-numbers-mode +1)
-  (set-face-attribute 'default nil :family "Lilex Nerd Font" :height 120 :weight 'medium)
-  (add-to-list 'default-frame-alist '(font . "Lilex Nerd Font-12"))
+  (set-face-attribute 'default nil :family "RecMonoLinear Nerd Font" :height 140 :weight 'medium)
   (setq custom-theme-directory (concat user-emacs-directory "themes/"))
   (setq-default indent-tabs-mode nil
                 tab-width 4
@@ -365,6 +364,7 @@ This is my literate emacs configuration for you viewing pleasure
   ;;     (exec-path-from-shell-initialize)))
   (use-package undo-tree
     :after evil
+    :custom (undo-tree-history-directory-alist `(("." . ,(concat user-emacs-directory "var/undo-tree-hist/"))))
     :config
     (evil-global-set-key 'normal (kbd "u") 'undo-tree-undo)
     (evil-global-set-key 'normal (kbd "C-r") 'undo-tree-redo)
@@ -555,6 +555,27 @@ This is my literate emacs configuration for you viewing pleasure
 #+end_src
 *** Popups
 #+begin_src emacs-lisp
+  ;; (use-package popper
+  ;;   :bind (
+  ;;          ("M-`"   . popper-cycle)
+  ;;          )
+  ;;   :init
+  ;;   (setq popper-reference-buffers
+  ;;         '("\\*Messages\\*"
+  ;;           "Output\\*$"
+  ;;           "\\COMMIT_EDITMSG\\*$" git-commit-mode git-commit-ts-mode
+  ;;           "\\*Async Shell Command\\*"
+  ;;           "\\*Warnings\\*"
+  ;;           "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
+  ;;           "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
+  ;;           "^\\*term.*\\*$"   term-mode   ;term as a popup
+  ;;           "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
+  ;;           help-mode
+  ;;           magit-status-mode
+  ;;           embark-collect-mode
+  ;;           compilation-mode))
+  ;;   (popper-mode +1)
+  ;;   (popper-echo-mode +1))                ; For echo area hints
   (use-package popup-mode
     :demand t
     :straight (popup-mode :host github :repo "aaronjensen/emacs-popup-mode")
@@ -636,6 +657,7 @@ This is my literate emacs configuration for you viewing pleasure
     (evil-global-set-key 'insert (kbd "C-h") nil)
     (evil-global-set-key 'insert (kbd "C-l") nil)
     (evil-global-set-key 'normal (kbd "C-p") nil)
+    (evil-global-set-key 'normal (kbd "C-u") 'evil-scroll-up)
     (evil-global-set-key 'normal (kbd "K") nil)
     (evil-global-set-key 'normal (kbd "J") nil)
     (evil-global-set-key 'normal (kbd "C-f") nil)
@@ -659,6 +681,78 @@ This is my literate emacs configuration for you viewing pleasure
     :after evil
     :config
     (evil-collection-init))
+
+  (use-package evil-multiedit
+    :commands (evil-mc-make-cursor-here
+               evil-mc-make-all-cursors
+               evil-mc-undo-all-cursors
+               evil-mc-pause-cursors
+               evil-mc-resume-cursors
+               evil-mc-make-and-goto-first-cursor
+               evil-mc-make-and-goto-last-cursor
+               evil-mc-make-cursor-in-visual-selection-beg
+               evil-mc-make-cursor-in-visual-selection-end
+               evil-mc-make-cursor-move-next-line
+               evil-mc-make-cursor-move-prev-line
+               evil-mc-make-cursor-at-pos
+               evil-mc-has-cursors-p
+               evil-mc-make-and-goto-next-cursor
+               evil-mc-skip-and-goto-next-cursor
+               evil-mc-make-and-goto-prev-cursor
+               evil-mc-skip-and-goto-prev-cursor
+               evil-mc-make-and-goto-next-match
+               evil-mc-skip-and-goto-next-match
+               evil-mc-skip-and-goto-next-match
+               evil-mc-make-and-goto-prev-match
+               evil-mc-skip-and-goto-prev-match)
+    :config
+    (evil-mc-define-vars)
+    (evil-mc-initialize-vars)
+    (add-hook 'evil-mc-before-cursors-created #'evil-mc-pause-incompatible-modes)
+    (add-hook 'evil-mc-before-cursors-created #'evil-mc-initialize-active-state)
+    (add-hook 'evil-mc-after-cursors-deleted  #'evil-mc-teardown-active-state)
+    (add-hook 'evil-mc-after-cursors-deleted  #'evil-mc-resume-incompatible-modes)
+    (advice-add #'evil-mc-initialize-hooks :override #'ignore)
+    (advice-add #'evil-mc-teardown-hooks :override #'evil-mc-initialize-vars)
+    (advice-add #'evil-mc-initialize-active-state :before #'turn-on-evil-mc-mode)
+    (advice-add #'evil-mc-teardown-active-state :after #'turn-off-evil-mc-mode))
+  
+  (use-package evil-mc
+    :config
+    ;; evil-multiedit
+    (evil-define-key 'normal 'global
+      (kbd "M-b")   #'evil-multiedit-match-symbol-and-next
+      (kbd "M-B")   #'evil-multiedit-match-symbol-and-prev)
+    (evil-define-key 'visual 'global
+      "R"           #'evil-multiedit-match-all
+      (kbd "M-b")   #'evil-multiedit-match-and-next
+      (kbd "M-B")   #'evil-multiedit-match-and-prev)
+    (evil-define-key '(visual normal) 'global
+      (kbd "C-M-b") #'evil-multiedit-restore)
+
+    (with-eval-after-load 'evil-mutliedit
+      (evil-define-key 'multiedit 'global
+        (kbd "M-b")   #'evil-multiedit-match-and-next
+        (kbd "M-S-b") #'evil-multiedit-match-and-prev
+        (kbd "RET")   #'evil-multiedit-toggle-or-restrict-region)
+      (evil-define-key '(multiedit multiedit-insert) 'global
+        (kbd "C-n")   #'evil-multiedit-next
+        (kbd "C-p")   #'evil-multiedit-prev))
+
+    ;; evil-mc
+    (evil-define-key '(normal visual) 'global
+      "gzm" #'evil-mc-make-all-cursors
+      "gzu" #'evil-mc-undo-all-cursors
+      "gzn" #'evil-mc-make-and-goto-next-cursor
+      "gzp" #'evil-mc-make-and-goto-prev-cursor
+      "gzN" #'evil-mc-make-and-goto-last-cursor
+      "gzP" #'evil-mc-make-and-goto-first-cursor)
+    (with-eval-after-load 'evil-mc
+      (evil-define-key '(normal visual) evil-mc-key-map
+        (kbd "C-n") #'evil-mc-make-and-goto-next-cursor
+        (kbd "C-N") #'evil-mc-make-and-goto-last-cursor
+        (kbd "C-p") #'evil-mc-make-and-goto-prev-cursor
+        (kbd "C-P") #'evil-mc-make-and-goto-first-cursor)))
 #+end_src  
 *** General
 #+begin_src emacs-lisp
@@ -713,8 +807,6 @@ This is my literate emacs configuration for you viewing pleasure
       "d" '(:ignore t :wk "[D]elete")
       "db" '(evil-delete-buffer :wk "[D]elete [B]uffer")
       "dw" '(delete-window :wk "[D]elete [W]indow")
-      "dp" '(+popup/close :wk "[D]elete [W]indow")
-      "pp" '(+popup/toggle :wk "[D]elete [W]indow")
       "h" '(:ignore t :wk "[H]arpoon")
       "ha" '(harpoon-add-file :wk "[H]arpoon [A]dd")
       "he" '(harpoon-toggle-quick-menu :wk "[H]arpoon [E]dit")
@@ -731,6 +823,8 @@ This is my literate emacs configuration for you viewing pleasure
       ;; projects
       "p" '(:ignore t :wk "[P]erspective")
       "ps" '(persp-switch :wk "[P]erspective [S]witch")
+      "pp" '(+popup/toggle :wk "[P]opup [T]oggle")
+      "pn" '(+popup/other :wk "[P]opup [N]ext")
       ;; search
       "s" '(:ignore t :wk "[S]earch")
       "sd" '(consult-lsp-diagnostics :wk "[S]earch [D]iagnostics")
@@ -801,13 +895,46 @@ This is my literate emacs configuration for you viewing pleasure
 *** Perspective project bridge
 #+begin_src emacs-lisp
   (use-package perspective-project-bridge
-    :hook
-    (after-init . perspective-project-bridge-mode)
-    (perspective-project-bridge-mode . (lambda ()
-  									   (if perspective-project-bridge-mode
-  										   (perspective-project-bridge-find-perspectives-for-all-buffers)
-  										 (perspective-project-bridge-kill-perspectives))))
-    (persp-mode . perspective-project-bridge-mode))
+    :after perspective
+    :config
+    (defvar perspective-project-bridge-separator "/")
+    (defvar perspective-project-bridge-depth 3)
+    (defun my-persp-project-name-from-path (project-root)
+      "Generate a perspective name from PROJECT-ROOT path."
+      (let* ((parts (split-string (directory-file-name project-root) "[/\\]" t))
+             (n (length parts)))
+        ;; Always include up to 3 last parts: project, feature, branch
+        (mapconcat #'identity (last parts (min perspective-project-bridge-depth n)) perspective-project-bridge-separator)))
+
+    (defun perspective-project-bridge-find-perspective-for-buffer (buffer)
+      "Find a project-specific perspective for BUFFER.
+  If no such perspective exists, a new one is created and the buffer is added to it."
+      (when (buffer-live-p buffer)
+        (with-current-buffer buffer
+          (when (and perspective-project-bridge-mode
+                     (buffer-name buffer)
+                     (project-current))
+            (let* ((project-root (directory-file-name
+                                  (if (fboundp 'project-root)
+                                      (project-root (project-current))
+                                    (car (project-roots (project-current))))))
+                   (name (my-persp-project-name-from-path project-root))
+                   (persp (persp-new name)))
+              (with-perspective (persp-name persp)
+                (setq perspective-project-bridge-persp t)
+                (persp-add-buffer buffer))
+              persp)))))
+
+    (add-hook 'perspective-project-bridge-mode-hook
+              (lambda ()
+                (if perspective-project-bridge-mode
+                    (perspective-project-bridge-find-perspectives-for-all-buffers)
+                  (perspective-project-bridge-kill-perspectives))))
+
+    (add-hook 'after-init-hook
+              (lambda ()
+                (perspective-project-bridge-mode 1))
+              t))
 #+end_src  
 ** AI
 *** GPTEL
@@ -912,7 +1039,7 @@ This is my literate emacs configuration for you viewing pleasure
                   (edit-success nil))
               ;; apply changes
               (dolist (file-edit (seq-into file-edits 'list))
-                (when-let ((line-number (plist-get file-edit :line_number))
+                (when-let* ((line-number (plist-get file-edit :line_number))
                            (old-string (plist-get file-edit :old_string))
                            (new-string (plist-get file-edit :new_string))
                            (is-valid-old-string (not (string= old-string ""))))
@@ -1090,6 +1217,26 @@ This is my literate emacs configuration for you viewing pleasure
     (setq consult-preview-key "M-,")
     (consult-customize consult--source-buffer :hidden t :default nil)
     (add-to-list 'consult-buffer-sources persp-consult-source)
+    ;; (set-face-attribute 'consult-preview-file nil :slant 'normal)
+    (set-face-attribute 'consult-highlight-match nil :slant 'normal)
+    ;; (set-face-attribute 'consult-highlight-mark nil :slant 'normal)
+    ;; (set-face-attribute 'consult-preview-mark nil :slant 'normal)
+    (set-face-attribute 'consult-preview-insertion nil :slant 'normal)
+    (set-face-attribute 'consult-narrow-indicator nil :slant 'normal)
+    (set-face-attribute 'consult-async-running nil :slant 'normal)
+    (set-face-attribute 'consult-async-finished nil :slant 'normal)
+    (set-face-attribute 'consult-async-failed nil :slant 'normal)
+    (set-face-attribute 'consult-async-split nil :slant 'normal)
+    (set-face-attribute 'consult-help nil :slant 'normal)
+    (set-face-attribute 'consult-key nil :slant 'normal)
+    (set-face-attribute 'consult-line-number nil :slant 'normal)
+    (set-face-attribute 'consult-file nil :slant 'normal)
+    (set-face-attribute 'consult-grep-context nil :slant 'normal)
+    (set-face-attribute 'consult-bookmark nil :slant 'normal)
+    (set-face-attribute 'consult-buffer nil :slant 'normal)
+    (set-face-attribute 'consult-line-number-prefix nil :slant 'normal)
+    (set-face-attribute 'consult-line-number-wrapped nil :slant 'normal)
+    (set-face-attribute 'consult-separator nil :slant 'normal)
     (consult-customize
      consult-theme :preview-key '(:debounce 0.2 any)
      consult-ripgrep consult-git-grep consult-grep
@@ -1148,6 +1295,7 @@ This is my literate emacs configuration for you viewing pleasure
     (global-corfu-mode)
     (corfu-history-mode)
     (corfu-popupinfo-mode))
+  
   (use-package corfu-terminal
     :straight (corfu-terminal :type git :repo "https://codeberg.org/akib/emacs-corfu-terminal.git")
     :config
