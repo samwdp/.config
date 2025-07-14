@@ -1592,6 +1592,11 @@ This has been taken straight from Doom Emacs. This minor mode basically increase
 #+end_src  
 *** Dired
 #+begin_src emacs-lisp
+  (use-package dired
+    :straight (:type built-in)
+    :config
+    (setq dired-dwim-target t)
+    )
   (use-package dirvish
     :config
     (dirvish-override-dired-mode)

@@ -1419,6 +1419,11 @@ If no such perspective exists, a new one is created and the buffer is added to i
   (evil-collection-magit-setup)
   :commands (magit-status magit-get-current-branch))
 
+(use-package dired
+  :straight (:type built-in)
+  :config
+  (setq dired-dwim-target t)
+  )
 (use-package dirvish
   :config
   (dirvish-override-dired-mode)
