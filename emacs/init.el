@@ -787,6 +787,7 @@ If no such perspective exists, a new one is created and the buffer is added to i
 (use-package gptel
   :config
   (require 'gptel-integrations)
+  (setq gptel-use-curl nil)
   (setq gptel-default-mode 'org-mode)
   (setq gptel-model 'o4-mini
         gptel-backend (gptel-make-gh-copilot "Copilot"))
@@ -976,19 +977,37 @@ If no such perspective exists, a new one is created and the buffer is added to i
    :include t)
   )
 
+(defvar mcp-filesystem-dirs nil
+  "List of directories for the mcp filesystem backend.")
+(when IS-WINDOWS
+  (setq mcp-filesystem-dirs
+        '("d:/work/foretracklite/develop/"
+          "d:/projects/treesit-context-headerline/main/")
+        )
+  )
+
+(when IS-LINUX
+  (setq mcp-filesystem-dirs
+        '("~/work/foretracklite/develop/")
+        )
+  )
+
 (use-package mcp
- :ensure t
- :after gptel
- :custom (mcp-hub-servers
-          `(("filesystem" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "d:/work/foretracklite/develop/" "d:/projects/treesit-context-headerline/main/" "d:/projects/treesit-context-overlay/")))
-            ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
-            ("github" . (:command "docker"
-                                  :args ("run" "-i" "--rm" "-e" "GITHUB_PERSONAL_ACCESS_TOKEN" "ghcr.io/github/github-mcp-server")
-                                  :env (:GITHUB_PERSONAL_ACCESS_TOKEN github-pat-token)))))
- :config
- (require 'mcp-hub)
- (require 'secrets nil t)
- :hook (after-init . mcp-hub-start-all-server))
+  :ensure t
+  :after gptel
+  :custom (mcp-hub-servers
+           `(("filesystem" . (:command "npx" :args ("-y"
+                                                    "@modelcontextprotocol/server-filesystem"
+                                                    ,@mcp-filesystem-dirs 
+                                                    )))
+             ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
+             ("github" . (:command "docker"
+                                   :args ("run" "-i" "--rm" "-e" "GITHUB_PERSONAL_ACCESS_TOKEN" "ghcr.io/github/github-mcp-server")
+                                   :env (:GITHUB_PERSONAL_ACCESS_TOKEN github-pat-token)))))
+  :config
+  (require 'mcp-hub)
+  (require 'secrets nil t)
+  :hook (after-init . mcp-hub-start-all-server))
 
 (use-package copilot
   :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
