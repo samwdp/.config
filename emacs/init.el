@@ -35,8 +35,8 @@
   (straight-check-for-modifications nil))
 
 (defun sp/new-frame ()
-  (set-face-attribute 'default nil :font (font-spec :family "RecMonoLinear Nerd Font") :height 140 :weight 'normal)
-  (set-face-attribute 'fixed-pitch nil :font (font-spec :family "RecMonoLinear Nerd Font") :height 140)
+  (set-face-attribute 'default nil :font (font-spec :family "RecMonoLigatures Nerd Font") :height 140 :weight 'normal)
+  (set-face-attribute 'fixed-pitch nil :font (font-spec :family "RecMonoLigatures Nerd Font") :height 140)
   (when IS-WINDOWS
     (set-frame-parameter (selected-frame) 'alpha '(98 . 98))
     (add-to-list 'default-frame-alist '(alpha . (98 . 98)))
@@ -50,8 +50,9 @@
   (when (and frame (display-graphic-p frame))
     (with-selected-frame frame
       (require 'unicode-fonts)
+      (unicode-fonts-setup)
       (sp/new-frame)
-      (unicode-fonts-setup))))
+      )))
 
 (defun sp/org-babel-tangle-config()
   (when (string-equal (buffer-file-name)
@@ -115,7 +116,7 @@
 (global-auto-revert-mode 1)
 (setq-default display-line-numbers-type 'relative)
 (global-display-line-numbers-mode +1)
-(set-face-attribute 'default nil :family "RecMonoLinear Nerd Font" :height 140 :weight 'medium)
+(set-face-attribute 'default nil :family "RecMonoLigatures Nerd Font" :height 140 :weight 'medium)
 (setq custom-theme-directory (concat user-emacs-directory "themes/"))
 (setq-default indent-tabs-mode nil
               tab-width 4
@@ -184,7 +185,7 @@
 
 ;;; Code:
 
-  (defcustom org-roam-db-last-update-file "~/.emacs.d/org-roam-db-last-update-time"
+  (defcustom org-roam-db-last-update-file (concat user-emacs-directory "org-roam-db-last-update-time")
     "File to store the timestamp of the last Org-roam database update."
     :type 'file
     :group 'org-roam)
@@ -1468,6 +1469,10 @@ If no such perspective exists, a new one is created and the buffer is added to i
   (evil-define-key 'normal shell-mode-map (kbd "C-h") 'windmove-left)
   (evil-define-key 'normal shell-mode-map (kbd "C-l") 'windmove-right)
   )
+
+(use-package vterm
+ :general (:states 'normal
+                   "SPC ot" '(vterm :wk "[O]pen [T]erminal")))
 
 (use-package eshell
   :config

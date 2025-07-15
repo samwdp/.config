@@ -4,3 +4,10 @@ nushell/history.txt
 git
 *.exe
 op/
+emacs/eln-cache/
+emacs/org-roam-db-last-update-time
+emacs/straight/
+emacs/tree-sitter/
+emacs/var/
+emacs/emacs-env.el
+go
