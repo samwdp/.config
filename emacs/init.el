@@ -1,6 +1,7 @@
 ;;; init.el -*- lexical-binding: t; -*-
 (setq gc-cons-threshold 300000000)
 (setq read-process-output-max (* 3(* 1024 1024))) ;; 1mb
+(set-default-coding-systems 'utf-8)
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
                          ("org" . "https://orgmode.org/elpa/")
                          ("elpa" . "https://elpa.gnu.org/packages/")))
@@ -270,12 +271,6 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
   (setq org-roam-ui-sync-theme t
         org-roam-ui-follow t))
 
-;; (use-package exec-path-from-shell
-;;   :init
-;;   (when (memq window-system '(mac ns x))
-;;     (exec-path-from-shell-initialize))
-;;   (when (daemonp)
-;;     (exec-path-from-shell-initialize)))
 (use-package undo-tree
   :after evil
   :custom (undo-tree-history-directory-alist `(("." . ,(concat user-emacs-directory "var/undo-tree-hist/"))))
@@ -440,30 +435,13 @@ If FORCE is non-nil, force a rebuild of the cache from scratch."
 
   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
+(use-package treemacs-nerd-icons
+  :config
+  (treemacs-load-theme "nerd-icons"))
+
 (use-package pulsar
   :init (pulsar-global-mode +1))
 
-;; (use-package popper
-;;   :bind (
-;;          ("M-`"   . popper-cycle)
-;;          )
-;;   :init
-;;   (setq popper-reference-buffers
-;;         '("\\*Messages\\*"
-;;           "Output\\*$"
-;;           "\\COMMIT_EDITMSG\\*$" git-commit-mode git-commit-ts-mode
-;;           "\\*Async Shell Command\\*"
-;;           "\\*Warnings\\*"
-;;           "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
-;;           "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
-;;           "^\\*term.*\\*$"   term-mode   ;term as a popup
-;;           "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
-;;           help-mode
-;;           magit-status-mode
-;;           embark-collect-mode
-;;           compilation-mode))
-;;   (popper-mode +1)
-;;   (popper-echo-mode +1))                ; For echo area hints
 (use-package popup-mode
   :demand t
   :straight (popup-mode :host github :repo "aaronjensen/emacs-popup-mode")
@@ -808,6 +786,7 @@ If no such perspective exists, a new one is created and the buffer is added to i
 
 (use-package gptel
   :config
+  (require 'gptel-integrations)
   (setq gptel-default-mode 'org-mode)
   (setq gptel-model 'o4-mini
         gptel-backend (gptel-make-gh-copilot "Copilot"))
@@ -996,6 +975,20 @@ If no such perspective exists, a new one is created and the buffer is added to i
    :async t
    :include t)
   )
+
+(use-package mcp
+ :ensure t
+ :after gptel
+ :custom (mcp-hub-servers
+          `(("filesystem" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "d:/work/foretracklite/develop/" "d:/projects/treesit-context-headerline/main/" "d:/projects/treesit-context-overlay/")))
+            ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
+            ("github" . (:command "docker"
+                                  :args ("run" "-i" "--rm" "-e" "GITHUB_PERSONAL_ACCESS_TOKEN" "ghcr.io/github/github-mcp-server")
+                                  :env (:GITHUB_PERSONAL_ACCESS_TOKEN github-pat-token)))))
+ :config
+ (require 'mcp-hub)
+ (require 'secrets nil t)
+ :hook (after-init . mcp-hub-start-all-server))
 
 (use-package copilot
   :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
@@ -1330,19 +1323,22 @@ If no such perspective exists, a new one is created and the buffer is added to i
 
 
 
-  (use-package consult-lsp
-    :defer t)
+(use-package consult-lsp
+  :defer t)
 
-  (use-package treemacs)
-  (use-package treemacs-nerd-icons
+(use-package treemacs)
+
+(use-package treemacs-nerd-icons
   :config
   (treemacs-load-theme "nerd-icons"))
-  (use-package lsp-treemacs-nerd-icons
-    :after nerd-icons
-    :straight (:host github :repo "Velnbur/lsp-treemacs-nerd-icons")
-    :init (with-eval-after-load 'lsp-treemacs
-            (require 'lsp-treemacs-nerd-icons))
-    )
+(use-package lsp-treemacs-nerd-icons
+  :after nerd-icons
+  :straight (:host github :repo "Velnbur/lsp-treemacs-nerd-icons")
+  :init (with-eval-after-load 'lsp-treemacs
+          (require 'lsp-treemacs-nerd-icons))
+  )
+(use-package lsp-treemacs
+  :custom (lsp-treemacs-theme "nerd-icons-ext"))
 
 (use-package flycheck
   :hook (lsp-mode . flycheck-mode)
@@ -1406,24 +1402,23 @@ If no such perspective exists, a new one is created and the buffer is added to i
   (require 'dap-cpptools))
 
 (use-package magit
-  :defer t
+  :demand t
   :hook (magit-mode . (lambda ()
                         (evil-collection-define-key 'normal 'magit-mode-map (kbd "C-k") nil)
                         (evil-collection-define-key 'normal 'magit-mode-map (kbd "C-j") nil)
                         ))
   :config
   (when IS-WINDOWS
-    (setq magit-git-executable "C:/Program Files/Git/bin/git.exe")
+    (setq magit-git-executable "C:/Program Files/Git/mingw64/bin/git.exe")
     )
   (setq git-commit-major-mode 'git-commit-ts-mode)
-  (evil-collection-magit-setup)
-  :commands (magit-status magit-get-current-branch))
+  (evil-collection-magit-setup))
 
 (use-package dired
   :straight (:type built-in)
   :config
-  (setq dired-dwim-target t)
-  )
+  (setq dired-dwim-target t))
+
 (use-package dirvish
   :config
   (dirvish-override-dired-mode)
@@ -1438,6 +1433,7 @@ If no such perspective exists, a new one is created and the buffer is added to i
          ;; Other attributes are displayed in the order they appear in this list.
          '(git-msg file-size))
         dirvish-hide-details t))
+
 (use-package diredfl
   :hook
   ((dired-mode . diredfl-mode)
@@ -1509,6 +1505,13 @@ If no such perspective exists, a new one is created and the buffer is added to i
   (setq treesit-context-overlay-face "#bdae93"
         treesit-context-overlay-delimiter "=>")
   )
+
+(use-package treesit-context-headerline
+  :straight (treesit-context-headerline :host github :repo "samwdp/treesit-context-headerline")
+  :hook ((csharp-ts-mode . treesit-context-headerline-mode)
+         (typescript-ts-mode . treesit-context-headerline-mode))
+  :config
+  (setq treesit-context-headerline-separator '("nf-cod-chevron_right" . nerd-icons)))
 
 (use-package lua-ts-mode
   :mode ("\\.lua\\'" . lua-ts-mode)

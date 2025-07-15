@@ -37,6 +37,7 @@ This is my literate emacs configuration for you viewing pleasure
     - [[#perspective-project-bridge][Perspective project bridge]]
   - [[#ai][AI]]
     - [[#gptel][GPTEL]]
+    - [[#mcp][MCP]]
     - [[#copilot][Copilot]]
   - [[#completions-and-minibuffer][Completions and minibuffer]]
     - [[#cape][cape]]
@@ -75,6 +76,7 @@ This is my literate emacs configuration for you viewing pleasure
   ;;; init.el -*- lexical-binding: t; -*-
   (setq gc-cons-threshold 300000000)
   (setq read-process-output-max (* 3(* 1024 1024))) ;; 1mb
+  (set-default-coding-systems 'utf-8)
   (setq package-archives '(("melpa" . "https://melpa.org/packages/")
                            ("org" . "https://orgmode.org/elpa/")
                            ("elpa" . "https://elpa.gnu.org/packages/")))
@@ -356,12 +358,6 @@ This is my literate emacs configuration for you viewing pleasure
 #+end_src  
 ** Shell things
 #+begin_src emacs-lisp
-  ;; (use-package exec-path-from-shell
-  ;;   :init
-  ;;   (when (memq window-system '(mac ns x))
-  ;;     (exec-path-from-shell-initialize))
-  ;;   (when (daemonp)
-  ;;     (exec-path-from-shell-initialize)))
   (use-package undo-tree
     :after evil
     :custom (undo-tree-history-directory-alist `(("." . ,(concat user-emacs-directory "var/undo-tree-hist/"))))
@@ -550,32 +546,15 @@ This is my literate emacs configuration for you viewing pleasure
 
     (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
+  (use-package treemacs-nerd-icons
+    :config
+    (treemacs-load-theme "nerd-icons"))
+
   (use-package pulsar
     :init (pulsar-global-mode +1))
 #+end_src
 *** Popups
 #+begin_src emacs-lisp
-  ;; (use-package popper
-  ;;   :bind (
-  ;;          ("M-`"   . popper-cycle)
-  ;;          )
-  ;;   :init
-  ;;   (setq popper-reference-buffers
-  ;;         '("\\*Messages\\*"
-  ;;           "Output\\*$"
-  ;;           "\\COMMIT_EDITMSG\\*$" git-commit-mode git-commit-ts-mode
-  ;;           "\\*Async Shell Command\\*"
-  ;;           "\\*Warnings\\*"
-  ;;           "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
-  ;;           "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
-  ;;           "^\\*term.*\\*$"   term-mode   ;term as a popup
-  ;;           "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
-  ;;           help-mode
-  ;;           magit-status-mode
-  ;;           embark-collect-mode
-  ;;           compilation-mode))
-  ;;   (popper-mode +1)
-  ;;   (popper-echo-mode +1))                ; For echo area hints
   (use-package popup-mode
     :demand t
     :straight (popup-mode :host github :repo "aaronjensen/emacs-popup-mode")
@@ -942,6 +921,7 @@ This is my literate emacs configuration for you viewing pleasure
 #+begin_src emacs-lisp
   (use-package gptel
     :config
+    (require 'gptel-integrations)
     (setq gptel-default-mode 'org-mode)
     (setq gptel-model 'o4-mini
           gptel-backend (gptel-make-gh-copilot "Copilot"))
@@ -1131,6 +1111,23 @@ This is my literate emacs configuration for you viewing pleasure
      :include t)
     )
 #+end_src  
+*** MCP
+#+begin_src emacs-lisp
+  (use-package mcp
+   :ensure t
+   :after gptel
+   :custom (mcp-hub-servers
+            `(("filesystem" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "d:/work/foretracklite/develop/")))
+              ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
+              ("github" . (:command "docker"
+                                    :args ("run" "-i" "--rm" "-e" "GITHUB_PERSONAL_ACCESS_TOKEN" "ghcr.io/github/github-mcp-server")
+                                    :env (:GITHUB_PERSONAL_ACCESS_TOKEN github-pat-token)))))
+   :config
+   (require 'mcp-hub)
+   (require 'secrets nil t)
+   :hook (after-init . mcp-hub-start-all-server))
+  #+end_src
+
 *** Copilot
 #+begin_src emacs-lisp
   (use-package copilot
@@ -1466,27 +1463,27 @@ This has been taken straight from Doom Emacs. This minor mode basically increase
 #+end_src
 **** Lsp UI
 #+begin_src emacs-lisp
-(use-package lsp-ui
-  :hook ((lsp-mode . lsp-ui-mode))
-  :init
-  ;; (evil-define-key 'normal lsp-ui-mode-map (kbd "K") 'lsp-ui-doc-glance)
-  (evil-define-key 'normal lsp-ui-mode-map (kbd "TAB") 'lsp-ui-doc-focus-frame)
-  (evil-define-key 'normal lsp-ui-doc-frame-mode-map (kbd "<escape>") 'lsp-ui-doc-hide)
-  (evil-define-key 'normal lsp-ui-doc-frame-mode-map (kbd "q") 'lsp-ui-doc-hide)
-  :config
-  (setq lsp-ui-doc-enable t
-        lsp-ui-peek-enable t
-        lsp-ui-doc-position 'at-point
-        lsp-ui-doc-show-with-mouse nil
-        lsp-ui-sideline-ignore-duplicate t
-        lsp-ui-sideline-show-hover nil
-        lsp-ui-sideline-actions-icon lsp-ui-sideline-actions-icon-default)
-  (define-key lsp-mode-map [remap evil-lookup] #'lsp-ui-doc-glance)
+  (use-package lsp-ui
+    :hook ((lsp-mode . lsp-ui-mode))
+    :init
+    ;; (evil-define-key 'normal lsp-ui-mode-map (kbd "K") 'lsp-ui-doc-glance)
+    (evil-define-key 'normal lsp-ui-mode-map (kbd "TAB") 'lsp-ui-doc-focus-frame)
+    (evil-define-key 'normal lsp-ui-doc-frame-mode-map (kbd "<escape>") 'lsp-ui-doc-hide)
+    (evil-define-key 'normal lsp-ui-doc-frame-mode-map (kbd "q") 'lsp-ui-doc-hide)
+    :config
+    (setq lsp-ui-doc-enable t
+          lsp-ui-peek-enable t
+          lsp-ui-doc-position 'at-point
+          lsp-ui-doc-show-with-mouse nil
+          lsp-ui-sideline-ignore-duplicate t
+          lsp-ui-sideline-show-hover nil
+          lsp-ui-sideline-actions-icon lsp-ui-sideline-actions-icon-default)
+    (define-key lsp-mode-map [remap evil-lookup] #'lsp-ui-doc-glance)
 
-  (define-key lsp-ui-peek-mode-map (kbd "j") #'lsp-ui-peek--select-next)
-  (define-key lsp-ui-peek-mode-map (kbd "k") #'lsp-ui-peek--select-prev)
-  (define-key lsp-ui-peek-mode-map (kbd "M-j") #'lsp-ui-peek--select-next-file)
-  (define-key lsp-ui-peek-mode-map (kbd "M-j") #'lsp-ui-peek--select-prev-file))
+    (define-key lsp-ui-peek-mode-map (kbd "j") #'lsp-ui-peek--select-next)
+    (define-key lsp-ui-peek-mode-map (kbd "k") #'lsp-ui-peek--select-prev)
+    (define-key lsp-ui-peek-mode-map (kbd "M-j") #'lsp-ui-peek--select-next-file)
+    (define-key lsp-ui-peek-mode-map (kbd "M-j") #'lsp-ui-peek--select-prev-file))
 
 
 
@@ -1494,15 +1491,18 @@ This has been taken straight from Doom Emacs. This minor mode basically increase
     :defer t)
 
   (use-package treemacs)
+
   (use-package treemacs-nerd-icons
-  :config
-  (treemacs-load-theme "nerd-icons"))
+    :config
+    (treemacs-load-theme "nerd-icons"))
   (use-package lsp-treemacs-nerd-icons
     :after nerd-icons
     :straight (:host github :repo "Velnbur/lsp-treemacs-nerd-icons")
     :init (with-eval-after-load 'lsp-treemacs
             (require 'lsp-treemacs-nerd-icons))
     )
+  (use-package lsp-treemacs
+    :custom (lsp-treemacs-theme "nerd-icons-ext"))
 #+end_src  
 **** flycheck
 #+begin_src emacs-lisp
@@ -1577,26 +1577,25 @@ This has been taken straight from Doom Emacs. This minor mode basically increase
 *** Magit
 #+begin_src emacs-lisp
   (use-package magit
-    :defer t
+    :demand t
     :hook (magit-mode . (lambda ()
                           (evil-collection-define-key 'normal 'magit-mode-map (kbd "C-k") nil)
                           (evil-collection-define-key 'normal 'magit-mode-map (kbd "C-j") nil)
                           ))
     :config
     (when IS-WINDOWS
-      (setq magit-git-executable "C:/Program Files/Git/bin/git.exe")
+      (setq magit-git-executable "C:/Program Files/Git/mingw64/bin/git.exe")
       )
     (setq git-commit-major-mode 'git-commit-ts-mode)
-    (evil-collection-magit-setup)
-    :commands (magit-status magit-get-current-branch))
+    (evil-collection-magit-setup))
 #+end_src  
 *** Dired
 #+begin_src emacs-lisp
   (use-package dired
     :straight (:type built-in)
     :config
-    (setq dired-dwim-target t)
-    )
+    (setq dired-dwim-target t))
+
   (use-package dirvish
     :config
     (dirvish-override-dired-mode)
@@ -1611,6 +1610,7 @@ This has been taken straight from Doom Emacs. This minor mode basically increase
            ;; Other attributes are displayed in the order they appear in this list.
            '(git-msg file-size))
           dirvish-hide-details t))
+  
   (use-package diredfl
     :hook
     ((dired-mode . diredfl-mode)
@@ -1696,6 +1696,13 @@ This has been taken straight from Doom Emacs. This minor mode basically increase
     (setq treesit-context-overlay-face "#bdae93"
           treesit-context-overlay-delimiter "=>")
     )
+
+  (use-package treesit-context-headerline
+    :straight (treesit-context-headerline :host github :repo "samwdp/treesit-context-headerline")
+    :hook ((csharp-ts-mode . treesit-context-headerline-mode)
+           (typescript-ts-mode . treesit-context-headerline-mode))
+    :config
+    (setq treesit-context-headerline-separator '("nf-cod-chevron_right" . nerd-icons)))
 
   (use-package lua-ts-mode
     :mode ("\\.lua\\'" . lua-ts-mode)
