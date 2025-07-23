@@ -30,7 +30,7 @@ config.default_prog = default_prog
 
 config.color_scheme = 'GruvboxDarkHard'
 
-config.font = wezterm.font("GeistMono NF", { weight = 'Medium' })
+config.font = wezterm.font("RecMonoLigatures Nerd Font", { weight = 'Medium' })
 -- config.font = wezterm.font("Lilex Nerd Font", { weight = 'Medium' })
 
 config.font_size = 13
